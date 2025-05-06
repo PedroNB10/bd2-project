@@ -1,0 +1,302 @@
+{
+    "ROCKETS": {
+      "descricao": "Informações sobre os foguetes utilizados nos lançamentos.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único do foguete.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "name": {
+          "tipo": "TEXT",
+          "descricao": "Nome do foguete.",
+          "restricoes": [
+            "não nulo"
+          ]
+        },
+        "height": {
+          "tipo": "FLOAT",
+          "descricao": "Altura total do foguete em metros."
+        },
+        "mass": {
+          "tipo": "FLOAT",
+          "descricao": "Massa total do foguete em quilogramas."
+        },
+        "cost_per_launch": {
+          "tipo": "FLOAT",
+          "descricao": "Custo estimado por lançamento em dólares."
+        }
+      }
+    },
+    "LAUNCHPADS": {
+      "descricao": "Locais físicos de onde ocorrem os lançamentos.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único da plataforma.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "name": {
+          "tipo": "TEXT",
+          "descricao": "Nome da plataforma de lançamento."
+        },
+        "locality": {
+          "tipo": "TEXT",
+          "descricao": "Cidade/local onde está situada a plataforma."
+        },
+        "region": {
+          "tipo": "TEXT",
+          "descricao": "Região ou estado da plataforma."
+        },
+        "status": {
+          "tipo": "TEXT",
+          "descricao": "Estado atual da plataforma.",
+          "valores_possiveis": [
+            "active",
+            "inactive",
+            "retired"
+          ]
+        }
+      }
+    },
+    "PAYLOADS": {
+      "descricao": "Cargas úteis enviadas ao espaço, como satélites ou módulos.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único da carga útil.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "type": {
+          "tipo": "TEXT",
+          "descricao": "Tipo da carga útil (ex: satélite, cápsula)."
+        },
+        "mass_kg": {
+          "tipo": "FLOAT",
+          "descricao": "Massa da carga útil em quilogramas."
+        },
+        "orbit": {
+          "tipo": "TEXT",
+          "descricao": "Tipo de órbita planejada (ex: LEO, GEO, MEO)."
+        }
+      }
+    },
+    "CREW": {
+      "descricao": "Tripulantes envolvidos em missões espaciais tripuladas.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único do tripulante.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "name": {
+          "tipo": "TEXT",
+          "descricao": "Nome do tripulante."
+        },
+        "status": {
+          "tipo": "TEXT",
+          "descricao": "Status atual do tripulante.",
+          "valores_possiveis": [
+            "active",
+            "inactive"
+          ]
+        }
+      }
+    },
+    "CORES": {
+      "descricao": "Estágios principais dos foguetes, incluindo dados sobre reutilização e pouso.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único do núcleo.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "reused": {
+          "tipo": "BOOLEAN",
+          "descricao": "Indica se o núcleo foi reutilizado em outro voo."
+        },
+        "land_success": {
+          "tipo": "BOOLEAN",
+          "descricao": "Indica se o pouso do núcleo foi bem-sucedido."
+        }
+      }
+    },
+    "LAUNCHES": {
+      "descricao": "Informações sobre os lançamentos realizados pela SpaceX.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único do lançamento.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "date_utc": {
+          "tipo": "DATETIME",
+          "descricao": "Data e hora do lançamento no formato UTC."
+        },
+        "success": {
+          "tipo": "BOOLEAN",
+          "descricao": "Indica se o lançamento foi bem-sucedido."
+        },
+        "rocket_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do foguete utilizado.",
+          "restricoes": [
+            "FK → ROCKETS.id"
+          ]
+        },
+        "launchpad_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador da plataforma de lançamento.",
+          "restricoes": [
+            "FK → LAUNCHPADS.id"
+          ]
+        }
+      }
+    },
+    "LAUNCH_PAYLOADS": {
+      "descricao": "Relaciona os lançamentos com suas respectivas cargas úteis (N:N).",
+      "atributos": {
+        "launch_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do lançamento.",
+          "restricoes": [
+            "FK → LAUNCHES.id"
+          ]
+        },
+        "payload_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador da carga útil.",
+          "restricoes": [
+            "FK → PAYLOADS.id"
+          ]
+        }
+      }
+    },
+    "LAUNCH_CREW": {
+      "descricao": "Relaciona os lançamentos com os tripulantes envolvidos (N:N).",
+      "atributos": {
+        "launch_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do lançamento.",
+          "restricoes": [
+            "FK → LAUNCHES.id"
+          ]
+        },
+        "crew_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do tripulante.",
+          "restricoes": [
+            "FK → CREW.id"
+          ]
+        }
+      }
+    },
+    "MISSIONS": {
+      "descricao": "Conjuntos de objetivos espaciais que podem envolver lançamentos e cargas úteis.",
+      "atributos": {
+        "id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador único da missão.",
+          "restricoes": [
+            "PK",
+            "não nulo"
+          ]
+        },
+        "name": {
+          "tipo": "TEXT",
+          "descricao": "Nome da missão."
+        },
+        "description": {
+          "tipo": "TEXT",
+          "descricao": "Descrição detalhada da missão."
+        }
+      }
+    },
+    "MISSION_LAUNCHES": {
+      "descricao": "Relaciona as missões aos lançamentos que as compõem (N:N).",
+      "atributos": {
+        "mission_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador da missão.",
+          "restricoes": [
+            "FK → MISSIONS.id"
+          ]
+        },
+        "launch_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do lançamento.",
+          "restricoes": [
+            "FK → LAUNCHES.id"
+          ]
+        }
+      }
+    },
+    "MISSION_PAYLOADS": {
+      "descricao": "Relaciona as missões às cargas úteis transportadas (N:N).",
+      "atributos": {
+        "mission_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador da missão.",
+          "restricoes": [
+            "FK → MISSIONS.id"
+          ]
+        },
+        "payload_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador da carga útil.",
+          "restricoes": [
+            "FK → PAYLOADS.id"
+          ]
+        }
+      }
+    },
+    "LAUNCH_CORES": {
+      "descricao": "Relaciona os lançamentos com os núcleos de foguete utilizados (N:N), incluindo dados operacionais.",
+      "atributos": {
+        "launch_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do lançamento.",
+          "restricoes": [
+            "FK → LAUNCHES.id"
+          ]
+        },
+        "core_id": {
+          "tipo": "TEXT",
+          "descricao": "Identificador do núcleo.",
+          "restricoes": [
+            "FK → CORES.id"
+          ]
+        },
+        "flight_number": {
+          "tipo": "INTEGER",
+          "descricao": "Número da reutilização do núcleo naquele lançamento."
+        },
+        "reused": {
+          "tipo": "BOOLEAN",
+          "descricao": "Indica se o núcleo foi reutilizado nesta missão específica."
+        },
+        "land_success": {
+          "tipo": "BOOLEAN",
+          "descricao": "Indica se o pouso do núcleo foi bem-sucedido neste lançamento."
+        }
+      }
+    }
+  }
