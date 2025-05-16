@@ -1,0 +1,8 @@
+pip install psycopg2-binary
+
+-> Comece colocando as credenciais no arquivo db_connection
+-> Rode o arquivo criar_spacex_bd.py (feito com psycopg2)
+
+Após, o próximo script vai precisar de outra lib:
+pip install requests
+
