@@ -1,7 +1,7 @@
 import subprocess
 import requests
 from db_connection import get_connection, wait_for_db
-from config import USE_DOCKER
+from backend.config import USE_DOCKER
 
 
 def fetch_data(endpoint):

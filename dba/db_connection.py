@@ -9,7 +9,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
 
-from config import (
+from backend.config import (
     DB_HOST,
     DB_PORT,
     DB_USER,

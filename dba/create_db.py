@@ -1,6 +1,6 @@
 from db_connection import get_connection, wait_for_db
 import subprocess
-from config import USE_DOCKER
+from backend.config import USE_DOCKER
 
 
 if __name__ == "__main__":

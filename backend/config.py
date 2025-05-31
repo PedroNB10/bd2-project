@@ -1,8 +1,10 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from a .env file
-load_dotenv()
+if os.path.exists(".env.local"):
+    load_dotenv(".env.local")
+else:
+    load_dotenv()
 
 # Define configuration variables with defaults if not provided
 USE_DOCKER = os.getenv("USE_DOCKER", "true").lower() == "true"
