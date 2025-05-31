@@ -3,7 +3,6 @@ import psycopg
 from flask import Flask
 from flask_cors import CORS
 from app.routes.api import api_bp
-from app.routes.example import example_bp
 from config import (
     DB_HOST,
     DB_PORT,
@@ -25,7 +24,6 @@ def create_app() -> Flask:
 
     # Register the blueprints
     app.register_blueprint(api_bp)
-    app.register_blueprint(example_bp)
 
     return app
 

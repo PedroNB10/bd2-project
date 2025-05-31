@@ -4,6 +4,24 @@
 pip install -r requirements.txt
 ```
 
+### Workspace do Postman com todas as requisições do backend, aceite o link de convite:
+
+[Clique aqui para acessar o Workspace do Postman](https://app.getpostman.com/join-team?invite_code=7c67035b20e8719cc58c75e883e81455dce36048e0e30c1900a0d9fb58e5a477)
+
+### Rodar a Aplicação em Docker ou usando banco de dados Local
+
+Para rodar a aplicação rodando com Docker vá ao .env e adicione True para essa variável:
+
+```bash
+USE_DOCKER=True
+```
+
+Caso contrário se deseja rodar a aplicação localmente use:
+
+```bash
+USE_DOCKER=False
+```
+
 ### Criar o Banco spacex_bd2
 
 - Requisitos
@@ -12,7 +30,7 @@ pip install -r requirements.txt
 
 OBS: Caso você queira testar com um banco de dados local, só será preciso alterar as variáveis de ambiente no arquivo `.env` localizado na raiz do projeto.
 
-1. Encontre a pasta `dba` dentro do diretório do projeto. (certifique-se que o docker esteja rodando)
+1. Encontre a pasta `dba` dentro do diretório do projeto.
 
 ```bash
 cd dba
@@ -26,7 +44,7 @@ python create_db.py
 
 ### Carga de Dados da API
 
-1. Certifique-se de que o banco de dados `spacex_bd2` foi criado com sucesso e que o Docker está rodando.
+1. Certifique-se de que o banco de dados `spacex_bd2` foi criado com sucesso.
 
 ```bash
 cd dba
@@ -72,7 +90,7 @@ chmod +x generate_models.sh
 
 Para gerar um novo backup do banco de dados `spacex_bd2`, você pode seguir os passos abaixo:
 
-1. Certifique-se de que o banco de dados `spacex_bd2` está rodando e que o Docker está ativo.
+1. Certifique-se de que o banco de dados `spacex_bd2` está rodando.
 
 ```bash
 cd backend/scripts
