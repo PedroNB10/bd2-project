@@ -1,11 +1,13 @@
 from db_connection import get_connection, wait_for_db
 import subprocess
+from config import USE_DOCKER
 
 
 if __name__ == "__main__":
     try:
-        print("Starting Docker Compose...")
-        subprocess.run(["docker", "compose", "up", "-d"], check=True)
+        if USE_DOCKER:
+            print("Starting Docker Compose...")
+            subprocess.run(["docker", "compose", "up", "-d"], check=True)
 
         wait_for_db()
 
@@ -170,5 +172,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Application interrupted by user.")
     finally:
-        print("Stopping Docker Compose...")
-        subprocess.run(["docker", "compose", "down"], check=True)
+        if USE_DOCKER:
+            print("Stopping Docker Compose...")
+            subprocess.run(["docker", "compose", "down"], check=True)

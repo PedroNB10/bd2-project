@@ -1,6 +1,7 @@
 import subprocess
 import requests
 from db_connection import get_connection, wait_for_db
+from config import USE_DOCKER
 
 
 def fetch_data(endpoint):
@@ -198,17 +199,6 @@ def insert_launch_payloads(data, cur):
             )
 
 
-# def insert_launch_crew(data, cur):
-#     for launch in data:
-#         launch_id = launch.get("id")
-#         for crew_id in launch.get("crew", []):  # crew_id já é uma string
-#             cur.execute("""
-#                 INSERT INTO launch_crew (launch_id, crew_id)
-#                 VALUES (%s, %s)
-#                 ON CONFLICT (launch_id, crew_id) DO NOTHING;
-#             """, (launch_id, crew_id))
-
-
 def insert_launch_cores(data, cur):
     for launch in data:
         launch_id = launch.get("id")
@@ -233,10 +223,10 @@ def insert_launch_cores(data, cur):
 
 
 def run_population():
-
     try:
-        print("Starting Docker Compose...")
-        subprocess.run(["docker", "compose", "up", "-d"], check=True)
+        if USE_DOCKER:
+            print("Starting Docker Compose...")
+            subprocess.run(["docker", "compose", "up", "-d"], check=True)
 
         wait_for_db()
 
@@ -264,7 +254,6 @@ def run_population():
         insert_payloads(payloads, cur)
 
         insert_launch_payloads(launches, cur)
-        # insert_launch_crew(launches, cur)
         insert_launch_cores(launches, cur)
 
         conn.commit()
@@ -275,8 +264,9 @@ def run_population():
     except KeyboardInterrupt:
         print("Application interrupted by user.")
     finally:
-        print("Stopping Docker Compose...")
-        subprocess.run(["docker", "compose", "down"], check=True)
+        if USE_DOCKER:
+            print("Stopping Docker Compose...")
+            subprocess.run(["docker", "compose", "down"], check=True)
 
 
 if __name__ == "__main__":
