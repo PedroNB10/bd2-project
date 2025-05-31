@@ -1,10 +1,19 @@
 import os
 from dotenv import load_dotenv
 
-if os.path.exists(".env.local"):
-    load_dotenv(".env.local")
+# Get the absolute path to the project root directory
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+# Try to load .env.local first, if it doesn't exist, fall back to .env
+env_local_path = os.path.join(project_root, ".env.local")
+env_path = os.path.join(project_root, ".env")
+
+if os.path.exists(env_local_path):
+    print('envLocal')
+    load_dotenv(env_local_path)
 else:
-    load_dotenv()
+    print('env')
+    load_dotenv(env_path)
 
 # Define configuration variables with defaults if not provided
 USE_DOCKER = os.getenv("USE_DOCKER", "true").lower() == "true"
