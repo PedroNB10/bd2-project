@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  database:
+    container_name: "spacex_bd2_postgres"
+    image: "postgres:16.0-alpine3.18"
+    env_file:
+      - ./.env
+    ports:
+      - "4000:5432"
+    volumes:
+      # Mount your local "backup" folder to the PostgreSQL init directory
+      - ./backend/backup:/docker-entrypoint-initdb.d
+      # Persist database data between container restarts
+      - pgdata:/var/lib/postgresql/data
+    # Use the default PostgreSQL entrypoint which will automatically run .sql files in /docker-entrypoint-initdb.d
+    # The backup files will be automatically restored in alphabetical order
+
+volumes:
+  pgdata:
