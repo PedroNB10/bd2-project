@@ -68,6 +68,28 @@ chmod +x generate_models.sh
 
 3. O script irá gerar os arquivos de modelos no diretório `backend/app/models/`. Você pode verificar os arquivos gerados para garantir que as classes estão corretas.
 
+### Gerar o novo backup do banco de dados
+
+Para gerar um novo backup do banco de dados `spacex_bd2`, você pode seguir os passos abaixo:
+
+1. Certifique-se de que o banco de dados `spacex_bd2` está rodando e que o Docker está ativo.
+
+```bash
+cd backend/scripts
+```
+
+2. Execute o comando para gerar o backup:
+
+```bash
+chmod +x generate_backup.sh
+
+```
+
+```bash
+./generate_backup
+
+```
+
 ### Iniciando servidor Backend e Frontend
 
 Para iniciar o servidor backend e frontend, você pode seguir os passos abaixo:
