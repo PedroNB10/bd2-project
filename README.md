@@ -67,3 +67,19 @@ chmod +x generate_models.sh
 ```
 
 3. O script irá gerar os arquivos de modelos no diretório `backend/app/models/`. Você pode verificar os arquivos gerados para garantir que as classes estão corretas.
+
+### Iniciando servidor Backend e Frontend
+
+Para iniciar o servidor backend e frontend, você pode seguir os passos abaixo:
+
+1. Certifique-se de que o banco de dados está rodando e que as dependências do projeto foram instaladas.
+
+```bash
+cd backend && python main.py
+```
+
+2. Abra um novo terminal e navegue até o diretório do frontend:
+
+```bash
+cd frontend && npm install && npm run dev
+```
