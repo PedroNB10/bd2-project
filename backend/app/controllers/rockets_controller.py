@@ -1,6 +1,6 @@
 from app.daos.rocket_dao import RocketDao
 from app.utils.serialize import serialize
-from app.exeptions.exeptions import DaoError, NoDataFound
+from app.exceptions.exceptions import DaoError, NoDataFound
 
 
 class RocketsController:

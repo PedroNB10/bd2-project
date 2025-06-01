@@ -1,7 +1,7 @@
 import logging
 from app.daos.base_dao import BaseDAO
 from app.models.models import Rockets
-from app.exeptions.exeptions import DaoError
+from app.exceptions.exceptions import DaoError
 
 logger = logging.getLogger(__name__)
 
