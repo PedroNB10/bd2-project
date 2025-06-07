@@ -12,11 +12,13 @@ def create_users(cur):
     '''
     
     try:
-        # 1. Cria usuários (se não existirem)
+        # Criando usuários (DBA como SUPERUSER)
+            # 1. spacex_dba
+            # 2. spacex_api
+            # 3. spacex_app (pode ser separado futuramente em mais usuários, definindo uma role para ela)
         cur.execute("SELECT 1 FROM pg_roles WHERE rolname = 'spacex_dba'")
         if not cur.fetchone():
             cur.execute("CREATE USER spacex_dba WITH PASSWORD 'spacex_dba' SUPERUSER")
-            cur.execute("GRANT ALL PRIVILEGES ON DATABASE spacex_bd2 TO spacex_dba")
         
         cur.execute("SELECT 1 FROM pg_roles WHERE rolname = 'spacex_api'")
         if not cur.fetchone():
@@ -26,26 +28,12 @@ def create_users(cur):
         if not cur.fetchone():
             cur.execute("CREATE USER spacex_app WITH PASSWORD 'spacex_app'")
 
-        # 2. Concede permissões para tabelas FUTURAS (ALTER DEFAULT PRIVILEGES)
+        # Definindo privilégios
         cur.execute("""
-            ALTER DEFAULT PRIVILEGES 
-            IN SCHEMA public 
-            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES 
-            TO spacex_api
-        """)
-        
-        cur.execute("""
-            ALTER DEFAULT PRIVILEGES 
-            IN SCHEMA public 
-            GRANT SELECT ON TABLES 
-            TO spacex_app
-        """)
-
-        # 3. Concede permissões para tabelas EXISTENTES (se houver)
-        cur.execute("""
+            GRANT ALL PRIVILEGES ON DATABASE spacex_bd2 TO spacex_dba;
             GRANT CONNECT ON DATABASE spacex_bd2 TO spacex_api, spacex_app;
             GRANT USAGE ON SCHEMA public TO spacex_api, spacex_app;
-            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO spacex_api;
+            GRANT INSERT ON ALL TABLES IN SCHEMA public TO spacex_api;
             GRANT SELECT ON ALL TABLES IN SCHEMA public TO spacex_app;
         """)
 
