@@ -28,6 +28,7 @@ def wait_for_db(retry_delay=2, max_retries=60):
     """
     Wait until the database is ready before starting the application.
     """
+    
     db_config = {
         "host": DB_HOST or "localhost",
         "port": DB_PORT or "5432",
