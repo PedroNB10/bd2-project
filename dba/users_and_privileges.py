@@ -1,16 +1,4 @@
 def create_users(cur):
-    '''
-    Excluir usuários criados no banco:
-    
-    DROP OWNED BY spacex_dba CASCADE;
-    DROP OWNED BY spacex_api CASCADE;
-    DROP OWNED BY spacex_app CASCADE;
-
-    DROP ROLE IF EXISTS spacex_dba;
-    DROP ROLE IF EXISTS spacex_api;
-    DROP ROLE IF EXISTS spacex_app;
-    '''
-    
     try:
         # Criando usuários (DBA como SUPERUSER)
             # 1. spacex_dba
@@ -27,20 +15,30 @@ def create_users(cur):
         cur.execute("SELECT 1 FROM pg_roles WHERE rolname = 'spacex_app'")
         if not cur.fetchone():
             cur.execute("CREATE USER spacex_app WITH PASSWORD 'spacex_app'")
+            
+        # O privilégio do DBA deve ser definido aqui
+        cur.execute("GRANT ALL PRIVILEGES ON DATABASE spacex_bd2 TO spacex_dba")
 
-        # Definindo privilégios
-        cur.execute("""
-            GRANT ALL PRIVILEGES ON DATABASE spacex_bd2 TO spacex_dba;
-            GRANT CONNECT ON DATABASE spacex_bd2 TO spacex_api, spacex_app;
-            GRANT USAGE ON SCHEMA public TO spacex_api, spacex_app;
-            GRANT INSERT ON ALL TABLES IN SCHEMA public TO spacex_api;
-            GRANT SELECT ON ALL TABLES IN SCHEMA public TO spacex_app;
-        """)
-
-        print("Usuários e permissões configurados com sucesso!")
+        print("Usuários criados!")
         return True
         
     except Exception as e:
         print(f"Falha ao criar usuários: {e}")
+        cur.execute("ROLLBACK")
+        return False
+    
+def define_privileges(cur):
+    try:
+        
+    # Definindo privilégios (Menos o DBA q foi definido na função de criação dos usuários)
+        cur.execute("""
+            GRANT CONNECT ON DATABASE spacex_bd2 TO spacex_api, spacex_app;
+            GRANT USAGE ON SCHEMA public TO spacex_api, spacex_app;
+            GRANT INSERT, SELECT ON ALL TABLES IN SCHEMA public TO spacex_api;
+            GRANT SELECT ON ALL TABLES IN SCHEMA public TO spacex_app;
+        """)
+        
+    except Exception as e:
+        print(f"Falha ao definir privilégios: {e}")
         cur.execute("ROLLBACK")
         return False
