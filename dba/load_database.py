@@ -230,7 +230,7 @@ def run_population():
 
         wait_for_db()
 
-        conn = get_connection(database="spacex_bd2")
+        conn = get_connection(database="spacex_bd2", user="spacex_api", password="spacex_api")
         cur = conn.cursor()
 
         rockets = fetch_data("rockets")

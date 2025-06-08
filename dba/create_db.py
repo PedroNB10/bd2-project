@@ -10,7 +10,7 @@ from create_tables import create_tables
 
 def create_database():
     try:
-        # Conecta ao banco postgres, pois o banco pode não existir
+        # Conecta via postgres, pois o banco pode não existir
         conn = get_connection("postgres")
         conn.autocommit = True
         cur = conn.cursor()
@@ -51,7 +51,7 @@ def stop_docker():
 
 def initialize_database():
     try:
-        conn = get_connection(DB_NAME)
+        conn = get_connection(database=DB_NAME, user="spacex_dba", password="spacex_dba")
         conn.autocommit = True
         cur = conn.cursor()
         

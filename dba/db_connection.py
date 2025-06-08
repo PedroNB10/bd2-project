@@ -18,9 +18,9 @@ from backend.config import (
 )
 
 
-def get_connection(database=DB_NAME):
+def get_connection(database=DB_NAME, user=DB_USER, password=DB_PASS):
     return psycopg2.connect(
-        host=DB_HOST, port=DB_PORT, database=database, user=DB_USER, password=DB_PASS
+        host=DB_HOST, port=DB_PORT, database=database, user=user, password=password
     )
 
 
