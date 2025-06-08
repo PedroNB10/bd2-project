@@ -15,8 +15,12 @@ def insert_rockets(data, cur):
     for rocket in data:
         cur.execute(
             """
-            INSERT INTO rockets (id, name, height, mass, cost_per_launch)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO rockets (
+                id, name, height, mass, cost_per_launch,
+                active, country, description, diameter, first_flight,
+                flickr_images, success_rate_pct, wikipedia
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
@@ -25,6 +29,14 @@ def insert_rockets(data, cur):
                 rocket.get("height", {}).get("meters"),
                 rocket.get("mass", {}).get("kg"),
                 rocket.get("cost_per_launch"),
+                rocket.get("active"),
+                rocket.get("country"),
+                rocket.get("description"),
+                rocket.get("diameter", {}).get("meters"),
+                rocket.get("first_flight"),
+                rocket.get("flickr_images", []),
+                rocket.get("success_rate_pct"),
+                rocket.get("wikipedia"),
             ),
         )
 
@@ -33,8 +45,12 @@ def insert_launchpads(data, cur):
     for pad in data:
         cur.execute(
             """
-            INSERT INTO launchpads (id, name, locality, region, status)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO launchpads (
+                id, name, locality, region, status,
+                details, full_name, images, latitude, longitude,
+                launch_attempts, launch_successes, timezone
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
@@ -43,6 +59,14 @@ def insert_launchpads(data, cur):
                 pad.get("locality"),
                 pad.get("region"),
                 pad.get("status"),
+                pad.get("details"),
+                pad.get("full_name"),
+                pad.get("images", {}).get("large", []),
+                pad.get("latitude"),
+                pad.get("longitude"),
+                pad.get("launch_attempts"),
+                pad.get("launch_successes"),
+                pad.get("timezone"),
             ),
         )
 
@@ -51,15 +75,21 @@ def insert_crew(data, cur):
     for member in data:
         cur.execute(
             """
-            INSERT INTO crew (id, name, status, launch_id)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO crew (
+                id, name, status, launch_id,
+                agency, image, wikipedia
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
                 member.get("id"),
                 member.get("name"),
                 member.get("status"),
-                member.get("launches")[0],
+                member.get("launches")[0] if member.get("launches") else None,
+                member.get("agency"),
+                member.get("image"),
+                member.get("wikipedia"),
             ),
         )
 
@@ -71,8 +101,11 @@ def insert_cores(data, cur):
             continue
         cur.execute(
             """
-            INSERT INTO cores (id, serial, status, reuse_count, asds_attempts, asds_landings, rtls_attempts, rtls_landings)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO cores (
+                id, serial, status, reuse_count, asds_attempts,
+                asds_landings, rtls_attempts, rtls_landings, last_update
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
@@ -84,6 +117,7 @@ def insert_cores(data, cur):
                 core.get("asds_landings", 0),
                 core.get("rtls_attempts", 0),
                 core.get("rtls_landings", 0),
+                core.get("last_update"),
             ),
         )
 
@@ -92,8 +126,11 @@ def insert_launches(data, cur):
     for launch in data:
         cur.execute(
             """
-            INSERT INTO launches (id, date_utc, success, rocket_id, launchpad_id)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO launches (
+                id, date_utc, success, rocket_id, launchpad_id,
+                details, name, static_fire_date_utc
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
@@ -102,16 +139,25 @@ def insert_launches(data, cur):
                 launch.get("success"),
                 launch.get("rocket"),
                 launch.get("launchpad"),
+                launch.get("details"),
+                launch.get("name"),
+                launch.get("static_fire_date_utc"),
             ),
         )
 
 
 def insert_starlink_satellites(data, cur):
     for item in data:
+        space_track = item.get("spaceTrack", {})
         cur.execute(
             """
-            INSERT INTO starlink_satellites (id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO starlink_satellites (
+                id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed,
+                creation_date, object_id, object_name, center_name, epoch, norad_cat_id,
+                time_system, object_type, launch_date, decay_date, eccentricity, inclination,
+                classification_type, apoapsis, periapsis
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
@@ -121,12 +167,23 @@ def insert_starlink_satellites(data, cur):
                 item.get("longitude"),
                 item.get("velocity_kms"),
                 item.get("version"),
-                item.get("launch"),  # Aqui está a correção
-                (
-                    bool(item.get("spaceTrack", {}).get("DECAYED"))
-                    if item.get("spaceTrack")
-                    else None
-                ),
+                item.get("launch"),
+                bool(space_track.get("DECAYED")) if space_track else None,
+                item.get("spaceTrack", {}).get("CREATION_DATE"),
+                item.get("spaceTrack", {}).get("OBJECT_ID"),
+                item.get("spaceTrack", {}).get("OBJECT_NAME"),
+                item.get("spaceTrack", {}).get("CENTER_NAME"),
+                item.get("spaceTrack", {}).get("EPOCH"),
+                item.get("spaceTrack", {}).get("NORAD_CAT_ID"),
+                item.get("spaceTrack", {}).get("TIME_SYSTEM"),
+                item.get("spaceTrack", {}).get("OBJECT_TYPE"),
+                item.get("spaceTrack", {}).get("LAUNCH_DATE"),
+                item.get("spaceTrack", {}).get("DECAY_DATE"),
+                item.get("spaceTrack", {}).get("ECCENTRICITY"),
+                item.get("spaceTrack", {}).get("INCLINATION"),
+                item.get("spaceTrack", {}).get("CLASSIFICATION_TYPE"),
+                item.get("spaceTrack", {}).get("APOAPSIS"),
+                item.get("spaceTrack", {}).get("PERIAPSIS"),
             ),
         )
 
@@ -137,8 +194,8 @@ def insert_orbital_parameters(data, cur):
         cur.execute(
             """
             INSERT INTO orbital_parameters (norad_cat_id, object_name, inclination, semimajor_axis, period,
-                                            eccentricity, epoch, mean_motion, country_code, starlink_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                            eccentricity, epoch, mean_motion, starlink_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (norad_cat_id) DO NOTHING;
         """,
             (
@@ -150,7 +207,6 @@ def insert_orbital_parameters(data, cur):
                 spaceTrack.get("ECCENTRICITY"),
                 spaceTrack.get("EPOCH"),
                 spaceTrack.get("MEAN_MOTION"),
-                spaceTrack.get("COUNTRY_CODE"),
                 item.get("id"),  # O ID da linha que armazena esse dicionário
             ),
         )
@@ -159,20 +215,20 @@ def insert_orbital_parameters(data, cur):
 def insert_payloads(data, cur):
     for payload in data:
         launch_id = payload.get("launch")
-
-        # Verifique se o launch_id existe em launches
-        # Essa etapa é necessária pois tem launch_is em payload q n n existe na tabela launches
         cur.execute("SELECT id FROM launches WHERE id = %s", (launch_id,))
         if not cur.fetchone():
-            print(
-                f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}"
-            )
-            continue  # Ignora este payload
+            print(f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}")
+            continue
 
         cur.execute(
             """
-            INSERT INTO payloads (id, type, mass_kg, orbit, launch_id)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO payloads (
+                id, type, mass_kg, orbit, launch_id,
+                apoapsis_km, arg_of_pericenter, customers, eccentricity,
+                epoch, name, nationalities, norad_ids, periapsis_km,
+                reference_system, reused, regime
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING;
         """,
             (
@@ -181,6 +237,18 @@ def insert_payloads(data, cur):
                 payload.get("mass_kg"),
                 payload.get("orbit"),
                 payload.get("launch"),
+                payload.get("apoapsis_km"),
+                payload.get("arg_of_pericenter"),
+                payload.get("customers", []),
+                payload.get("eccentricity"),
+                payload.get("epoch"),
+                payload.get("name"),
+                payload.get("nationalities", []),
+                payload.get("norad_ids", []),
+                payload.get("periapsis_km"),
+                payload.get("reference_system"),
+                payload.get("reused"),
+                payload.get("regime"),
             ),
         )
 
