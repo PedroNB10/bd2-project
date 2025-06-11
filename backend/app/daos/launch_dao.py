@@ -31,3 +31,12 @@ class LaunchDao(BaseDAO):
 
     def update(self, order: Launches):
         pass
+
+    def get_columns(self):
+
+        with self.get_session() as session:
+                core = session.query(Launches).first()
+                columns = core.__table__.columns
+                session.expunge_all()
+
+                return columns.keys()

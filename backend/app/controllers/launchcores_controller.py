@@ -26,3 +26,21 @@ class LaunchCoresController:
         except Exception as e:
             print(f"Error fetching all launchcores: {e}")
             raise
+
+    def get_columns(self):
+        try:
+            keys = self.launchcores_dao.get_columns()
+            if not keys:
+                raise AttributeError("No lanchcores found")
+
+            return keys
+
+        except NoDataFound as e:
+            raise
+
+        except DaoError as e:
+            raise
+
+        except Exception as e:
+            print(f"Error fetching column names for table Launchcores: {e}")
+            raise

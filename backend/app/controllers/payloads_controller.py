@@ -26,3 +26,21 @@ class PayloadsController:
         except Exception as e:
             print(f"Error fetching all payloads: {e}")
             raise
+
+    def get_columns(self):
+        try:
+            keys = self.payloads_dao.get_columns()
+            if not keys:
+                raise AttributeError("No payloads found")
+
+            return keys
+
+        except NoDataFound as e:
+            raise
+
+        except DaoError as e:
+            raise
+
+        except Exception as e:
+            print(f"Error fetching column names for table payloads: {e}")
+            raise

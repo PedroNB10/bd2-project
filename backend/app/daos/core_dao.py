@@ -31,3 +31,12 @@ class CoreDao(BaseDAO):
 
     def update(self, order: Cores):
         pass
+
+    def get_columns(self):
+
+        with self.get_session() as session:
+                core = session.query(Cores).first()
+                columns = core.__table__.columns
+                session.expunge_all()
+
+                return columns.keys()

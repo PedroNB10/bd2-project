@@ -26,3 +26,21 @@ class RocketsController:
         except Exception as e:
             print(f"Error fetching all orders: {e}")
             raise
+
+    def get_columns(self):
+        try:
+            keys = self.rockets_dao.get_columns()
+            if not keys:
+                raise AttributeError("No rockets found")
+
+            return keys
+
+        except NoDataFound as e:
+            raise
+
+        except DaoError as e:
+            raise
+
+        except Exception as e:
+            print(f"Error fetching column names for table rockets: {e}")
+            raise

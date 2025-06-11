@@ -26,3 +26,21 @@ class CrewsController:
         except Exception as e:
             print(f"Error fetching all crews: {e}")
             raise
+
+    def get_columns(self):
+        try:
+            keys = self.crews_dao.get_columns()
+            if not keys:
+                raise AttributeError("No crews found")
+
+            return keys
+
+        except NoDataFound as e:
+            raise
+
+        except DaoError as e:
+            raise
+
+        except Exception as e:
+            print(f"Error fetching column names for table Crews: {e}")
+            raise

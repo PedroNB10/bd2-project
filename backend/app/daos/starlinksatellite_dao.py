@@ -31,3 +31,12 @@ class StarlinkSatelliteDao(BaseDAO):
 
     def update(self, order: StarlinkSatellites):
         pass
+
+    def get_columns(self):
+
+        with self.get_session() as session:
+                core = session.query(StarlinkSatellites).first()
+                columns = core.__table__.columns
+                session.expunge_all()
+
+                return columns.keys()

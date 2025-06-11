@@ -18,3 +18,16 @@ def get_cores():
 
     except Exception as e:
         return jsonify({"error": "Error Getting cores", "details": str(e)}), 500
+    
+@cores_bp.route("/columns", methods=["GET"])
+def get_columns():
+    try:
+        keys = cores_controller.get_columns()
+
+        if not keys:
+            return jsonify({"error": "There is no cores!"})
+
+        return jsonify(keys), 200
+
+    except Exception as e:
+        return jsonify({"error": "Error getting columns", "details": str(e)}), 500

@@ -31,3 +31,12 @@ class OrbitalDao(BaseDAO):
 
     def update(self, order: OrbitalParameters):
         pass
+
+    def get_columns(self):
+
+        with self.get_session() as session:
+                core = session.query(OrbitalParameters).first()
+                columns = core.__table__.columns
+                session.expunge_all()
+
+                return columns.keys()
