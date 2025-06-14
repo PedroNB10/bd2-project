@@ -51,7 +51,6 @@ def create_tables(cur):
                 -- Adicionado depois da reunião
                 details TEXT,
                 name VARCHAR,
-                static_fire_date_utc TIMESTAMP,
                 
                 FOREIGN KEY (launchpad_id) REFERENCES LAUNCHPADS(id),
                 FOREIGN KEY (rocket_id) REFERENCES ROCKETS(id)
@@ -60,44 +59,47 @@ def create_tables(cur):
             -- STARLINK SATÉLITES
             CREATE TABLE starlink_satellites (
                 id VARCHAR PRIMARY KEY,
+                version VARCHAR,
+                launch_id VARCHAR NULL,  -- Relação N:1 com launches
                 height_km FLOAT,
                 latitude FLOAT,
                 longitude FLOAT,
                 velocity_kms FLOAT,
-                version VARCHAR,
-                launch_id VARCHAR NULL,  -- Relação N:1 com launches
-                decayed BOOLEAN,
-                
-                -- Adicionado depois da reunião
-                creation_date TIMESTAMP,
-                object_id VARCHAR,
-                object_name VARCHAR,
-                center_name VARCHAR,
-                epoch TIMESTAMP,
-                norad_cat_id INT,
-                time_system VARCHAR,
-                object_type VARCHAR,
-                launch_date TIMESTAMP,
-                eccentricity FLOAT,
-                inclination FLOAT,
-                classification_type VARCHAR,
-                apoapsis FLOAT,
-                periapsis FLOAT,
                 
                 FOREIGN KEY (launch_id) REFERENCES LAUNCHES(id)
             );
 
             -- PARÂMETROS ORBITAIS
             CREATE TABLE ORBITAL_PARAMETERS (
+                -- Identificadores
                 norad_cat_id INT PRIMARY KEY,
+                starlink_id VARCHAR NOT NULL,
+                object_id VARCHAR,
                 object_name VARCHAR,
+                
+                -- Parâmetros orbitais
                 inclination FLOAT,
+                eccentricity FLOAT,
                 semimajor_axis FLOAT,
                 period FLOAT,
-                eccentricity FLOAT,
-                epoch TIMESTAMP,
                 mean_motion FLOAT,
-                starlink_id VARCHAR NOT NULL,
+                apoapsis FLOAT,
+                periapsis FLOAT,
+                
+                -- Dados temporais
+                epoch TIMESTAMP,
+                launch_date TIMESTAMP,
+
+                -- Status
+                decayed BOOLEAN,
+                
+                -- Metadados
+                creation_date TIMESTAMP,
+                time_system VARCHAR,
+                classification_type VARCHAR,
+                object_type VARCHAR,
+                center_name VARCHAR,
+                
                 FOREIGN KEY (starlink_id) REFERENCES STARLINK_SATELLITES(id)
             );
 

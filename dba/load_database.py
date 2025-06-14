@@ -1,6 +1,6 @@
 import requests
 from db_connection import get_connection
-
+import psycopg2
 
 def fetch_data(endpoint):
     url = f"https://api.spacexdata.com/v4/{endpoint}"
@@ -23,13 +23,13 @@ def insert_rockets(data, cur):
             (
                 rocket.get("id"),
                 rocket.get("name"),
-                rocket.get("height", {}).get("meters"),
-                rocket.get("mass", {}).get("kg"),
+                rocket.get("height").get("meters"),
+                rocket.get("mass").get("kg"),
                 rocket.get("cost_per_launch"),
                 rocket.get("active"),
                 rocket.get("country"),
                 rocket.get("description"),
-                rocket.get("diameter", {}).get("meters"),
+                rocket.get("diameter").get("meters"),
                 rocket.get("first_flight"),
                 rocket.get("flickr_images")[0],
                 rocket.get("success_rate_pct"),
@@ -57,7 +57,7 @@ def insert_launchpads(data, cur):
                 pad.get("status"),
                 pad.get("details"),
                 pad.get("full_name"),
-                pad.get("images").get("large", [])[0],
+                pad.get("images").get("large")[0],
                 pad.get("latitude"),
                 pad.get("longitude"),
                 pad.get("launch_attempts"),
@@ -119,9 +119,9 @@ def insert_launches(data, cur):
             """
             INSERT INTO launches (
                 id, date_utc, success, rocket_id, launchpad_id,
-                details, name, static_fire_date_utc
+                details, name
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 launch.get("id"),
@@ -131,112 +131,122 @@ def insert_launches(data, cur):
                 launch.get("launchpad"),
                 launch.get("details"),
                 launch.get("name"),
-                launch.get("static_fire_date_utc"),
             ),
         )
 
 
 def insert_starlink_satellites(data, cur):
     for item in data:
-        space_track = item.get("spaceTrack", {})
-        print(space_track.get("DECAYED"))
         cur.execute(
             """
             INSERT INTO starlink_satellites (
-                id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed,
-                creation_date, object_id, object_name, center_name, epoch, norad_cat_id,
-                time_system, object_type, launch_date, eccentricity, inclination,
-                classification_type, apoapsis, periapsis
+                id, version, launch_id, height_km, latitude, longitude, velocity_kms
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
             (
                 item.get("id"),
+                item.get("version"),
+                item.get("launch"),  # Este é o launch_id na tabela
                 item.get("height_km"),
                 item.get("latitude"),
                 item.get("longitude"),
                 item.get("velocity_kms"),
-                item.get("version"),
-                item.get("launch"),
-                bool(space_track.get("DECAYED")) if space_track else None,
-                item.get("spaceTrack", {}).get("CREATION_DATE"),
-                item.get("spaceTrack", {}).get("OBJECT_ID"),
-                item.get("spaceTrack", {}).get("OBJECT_NAME"),
-                item.get("spaceTrack", {}).get("CENTER_NAME"),
-                item.get("spaceTrack", {}).get("EPOCH"),
-                item.get("spaceTrack", {}).get("NORAD_CAT_ID"),
-                item.get("spaceTrack", {}).get("TIME_SYSTEM"),
-                item.get("spaceTrack", {}).get("OBJECT_TYPE"),
-                item.get("spaceTrack", {}).get("LAUNCH_DATE"),
-                item.get("spaceTrack", {}).get("ECCENTRICITY"),
-                item.get("spaceTrack", {}).get("INCLINATION"),
-                item.get("spaceTrack", {}).get("CLASSIFICATION_TYPE"),
-                item.get("spaceTrack", {}).get("APOAPSIS"),
-                item.get("spaceTrack", {}).get("PERIAPSIS"),
             ),
         )
 
 
 def insert_orbital_parameters(data, cur):
     for item in data:
-        spaceTrack = item.get("spaceTrack", {})
+        space_track = item.get("spaceTrack", {})
         cur.execute(
             """
-            INSERT INTO orbital_parameters (norad_cat_id, object_name, inclination, semimajor_axis, period,
-                                            eccentricity, epoch, mean_motion, starlink_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
+            INSERT INTO orbital_parameters (
+                norad_cat_id, starlink_id, object_id, object_name,
+                inclination, eccentricity, semimajor_axis, period,
+                mean_motion, apoapsis, periapsis,
+                epoch, launch_date,
+                decayed,
+                creation_date, time_system, classification_type,
+                object_type, center_name
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
             (
-                spaceTrack.get("NORAD_CAT_ID"),
-                spaceTrack.get("OBJECT_NAME"),
-                spaceTrack.get("INCLINATION"),
-                spaceTrack.get("SEMIMAJOR_AXIS"),
-                spaceTrack.get("PERIOD"),
-                spaceTrack.get("ECCENTRICITY"),
-                spaceTrack.get("EPOCH"),
-                spaceTrack.get("MEAN_MOTION"),
-                item.get("id"),  # O ID da linha que armazena esse dicionário
+                space_track.get("NORAD_CAT_ID"),
+                item.get("id"),  # Chave estrangeira para starlink_satellites
+                space_track.get("OBJECT_ID"),
+                space_track.get("OBJECT_NAME"),
+                space_track.get("INCLINATION"),
+                space_track.get("ECCENTRICITY"),
+                space_track.get("SEMIMAJOR_AXIS"),
+                space_track.get("PERIOD"),
+                space_track.get("MEAN_MOTION"),
+                space_track.get("APOAPSIS"),
+                space_track.get("PERIAPSIS"),
+                space_track.get("EPOCH"),
+                space_track.get("LAUNCH_DATE"),
+                bool(space_track.get("DECAYED")) if space_track else None,
+                space_track.get("CREATION_DATE"),
+                space_track.get("TIME_SYSTEM"),
+                space_track.get("CLASSIFICATION_TYPE"),
+                space_track.get("OBJECT_TYPE"),
+                space_track.get("CENTER_NAME"),
             ),
         )
 
 
 def insert_payloads(data, cur):
     for payload in data:
-        launch_id = payload.get("launch")
-        cur.execute("SELECT id FROM launches WHERE id = %s", (launch_id,))
-        if not cur.fetchone():
-            print(f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}")
-            continue
+        # AGORA EU TO FAZENDO ISSO COM TRIGGER
+        # launch_id = payload.get("launch")
+        # cur.execute("SELECT id FROM launches WHERE id = %s", (launch_id,))
+        # if not cur.fetchone():
+        #     print(f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}")
+        #     continue
         
         # Tratamento para nationality
         nationalities = payload.get("nationalities", [])
         nationality = nationalities[0] if nationalities else None
 
-        cur.execute(
-            """
-            INSERT INTO payloads (
-                id, type, mass_kg, orbit, launch_id,
-                customers, name,
-                nationalities, norad_ids,
-                reference_system, reused, regime
+        try:
+            cur.execute(
+                """
+                INSERT INTO payloads (
+                    id, type, mass_kg, orbit, launch_id,
+                    customers, name,
+                    nationalities, norad_ids,
+                    reference_system, reused, regime
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    payload.get("id"),
+                    payload.get("type"),
+                    payload.get("mass_kg"),
+                    payload.get("orbit"),
+                    payload.get("launch"),
+                    payload.get("customers"),
+                    payload.get("name"),
+                    nationality,
+                    payload.get("norad_ids"),
+                    payload.get("reference_system"),
+                    payload.get("reused"),
+                    payload.get("regime"),
+                ),
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-            (
-                payload.get("id"),
-                payload.get("type"),
-                payload.get("mass_kg"),
-                payload.get("orbit"),
-                payload.get("launch"),
-                payload.get("customers", []),
-                payload.get("name"),
-                nationality,
-                payload.get("norad_ids", []),
-                payload.get("reference_system"),
-                payload.get("reused"),
-                payload.get("regime"),
-            ),
-        )
+            
+            # Verifica se há notificações do PostgreSQL
+            notices = cur.connection.notices
+            if notices:
+                for notice in notices:
+                    print(notice)  # Mostra a mensagem para o usuário
+                cur.connection.notices = []  # Limpa as notificações após exibir
+            
+        except Exception as e:
+            # Se ocorrer algum outro erro (além do trigger)
+            print(f"Erro ao inserir payload {payload.get('id')}: {str(e)}")
+            continue
 
 
 def insert_launch_payloads(data, cur):
@@ -298,6 +308,7 @@ def run_population():
 
         insert_starlink_satellites(starlink_data, cur)
         insert_orbital_parameters(starlink_data, cur)
+        
         insert_payloads(payloads, cur)
 
         insert_launch_payloads(launches, cur)

@@ -5,6 +5,7 @@ from backend.config import DB_NAME
 from create_indexes import create_indexes
 from users_and_privileges import create_users, define_privileges
 from create_tables import create_tables
+from create_triggers import create_trigger_payload
 
 def drop_user_if_exists(cur, username):
     # Verifica se o usuário existe
@@ -68,6 +69,7 @@ def initialize_database():
         cur = conn.cursor()
 
         create_tables(cur)
+        create_trigger_payload(cur)
         define_privileges(cur)
         create_indexes(cur)
 
