@@ -30,11 +30,11 @@ starlink_satellites:
     Colunas consideradas:
     id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed,
     creation_date, object_id, object_name, center_name, epoch, norad_cat_id, time_system,
-    object_type, launch_date, decay_date, eccentricity, inclination, classification_type,
+    object_type, launch_date, eccentricity, inclination, classification_type,
     apoapsis, periapsis
     
     Colunas não consideradas:
-    spaceTrack (substituído por seus campos individuais)
+    decay_date, spaceTrack (usado na orbital_parameters)
 
 orbital_parameters:
     Colunas consideradas:
@@ -50,13 +50,14 @@ orbital_parameters:
 
 payloads:
     Colunas consideradas:
-    id, type, mass_kg, orbit, launch_id, apoapsis_km, arg_of_pericenter, customers,
-    eccentricity, epoch, name, nationalities, norad_ids, periapsis_km, reference_system,
+    id, type, mass_kg, orbit, launch_id, customers,
+    name, nationalities, norad_ids, periapsis_km, reference_system,
     reused, regime
     
     Colunas não consideradas:
     dragon, inclination_deg, lifespan_years, longitude, manufacturers, mass_lbs,
-    mean_anomaly, mean_motion, period_min, raan, semi_major_axis_km
+    mean_anomaly, mean_motion, period_min, raan, semi_major_axis_km, arg_of_pericenter,
+    apoapsis_km, eccentricity, epoch,
 
 crew:
     Colunas consideradas:

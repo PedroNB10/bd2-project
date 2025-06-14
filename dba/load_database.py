@@ -1,7 +1,5 @@
-import subprocess
 import requests
-from db_connection import get_connection, wait_for_db
-from backend.config import USE_DOCKER
+from db_connection import get_connection
 
 
 def fetch_data(endpoint):
@@ -21,7 +19,6 @@ def insert_rockets(data, cur):
                 flickr_images, success_rate_pct, wikipedia
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
         """,
             (
                 rocket.get("id"),
@@ -34,7 +31,7 @@ def insert_rockets(data, cur):
                 rocket.get("description"),
                 rocket.get("diameter", {}).get("meters"),
                 rocket.get("first_flight"),
-                rocket.get("flickr_images", []),
+                rocket.get("flickr_images")[0],
                 rocket.get("success_rate_pct"),
                 rocket.get("wikipedia"),
             ),
@@ -51,7 +48,6 @@ def insert_launchpads(data, cur):
                 launch_attempts, launch_successes, timezone
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
         """,
             (
                 pad.get("id"),
@@ -61,7 +57,7 @@ def insert_launchpads(data, cur):
                 pad.get("status"),
                 pad.get("details"),
                 pad.get("full_name"),
-                pad.get("images", {}).get("large", []),
+                pad.get("images").get("large", [])[0],
                 pad.get("latitude"),
                 pad.get("longitude"),
                 pad.get("launch_attempts"),
@@ -80,13 +76,12 @@ def insert_crew(data, cur):
                 agency, image, wikipedia
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
         """,
             (
                 member.get("id"),
                 member.get("name"),
                 member.get("status"),
-                member.get("launches")[0] if member.get("launches") else None,
+                member.get("launches")[0],
                 member.get("agency"),
                 member.get("image"),
                 member.get("wikipedia"),
@@ -96,9 +91,6 @@ def insert_crew(data, cur):
 
 def insert_cores(data, cur):
     for core in data:
-        core_id = core.get("id")
-        if core_id is None:
-            continue
         cur.execute(
             """
             INSERT INTO cores (
@@ -106,17 +98,16 @@ def insert_cores(data, cur):
                 asds_landings, rtls_attempts, rtls_landings, last_update
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
         """,
             (
-                core_id,
+                core.get("id"),
                 core.get("serial"),
                 core.get("status"),
-                core.get("reuse_count", 0),
-                core.get("asds_attempts", 0),
-                core.get("asds_landings", 0),
-                core.get("rtls_attempts", 0),
-                core.get("rtls_landings", 0),
+                core.get("reuse_count"),
+                core.get("asds_attempts"),
+                core.get("asds_landings"),
+                core.get("rtls_attempts"),
+                core.get("rtls_landings"),
                 core.get("last_update"),
             ),
         )
@@ -131,7 +122,6 @@ def insert_launches(data, cur):
                 details, name, static_fire_date_utc
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
         """,
             (
                 launch.get("id"),
@@ -149,16 +139,16 @@ def insert_launches(data, cur):
 def insert_starlink_satellites(data, cur):
     for item in data:
         space_track = item.get("spaceTrack", {})
+        print(space_track.get("DECAYED"))
         cur.execute(
             """
             INSERT INTO starlink_satellites (
                 id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed,
                 creation_date, object_id, object_name, center_name, epoch, norad_cat_id,
-                time_system, object_type, launch_date, decay_date, eccentricity, inclination,
+                time_system, object_type, launch_date, eccentricity, inclination,
                 classification_type, apoapsis, periapsis
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 item.get("id"),
@@ -178,7 +168,6 @@ def insert_starlink_satellites(data, cur):
                 item.get("spaceTrack", {}).get("TIME_SYSTEM"),
                 item.get("spaceTrack", {}).get("OBJECT_TYPE"),
                 item.get("spaceTrack", {}).get("LAUNCH_DATE"),
-                item.get("spaceTrack", {}).get("DECAY_DATE"),
                 item.get("spaceTrack", {}).get("ECCENTRICITY"),
                 item.get("spaceTrack", {}).get("INCLINATION"),
                 item.get("spaceTrack", {}).get("CLASSIFICATION_TYPE"),
@@ -196,7 +185,6 @@ def insert_orbital_parameters(data, cur):
             INSERT INTO orbital_parameters (norad_cat_id, object_name, inclination, semimajor_axis, period,
                                             eccentricity, epoch, mean_motion, starlink_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (norad_cat_id) DO NOTHING;
         """,
             (
                 spaceTrack.get("NORAD_CAT_ID"),
@@ -219,17 +207,20 @@ def insert_payloads(data, cur):
         if not cur.fetchone():
             print(f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}")
             continue
+        
+        # Tratamento para nationality
+        nationalities = payload.get("nationalities", [])
+        nationality = nationalities[0] if nationalities else None
 
         cur.execute(
             """
             INSERT INTO payloads (
                 id, type, mass_kg, orbit, launch_id,
-                apoapsis_km, arg_of_pericenter, customers, eccentricity,
-                epoch, name, nationalities, norad_ids, periapsis_km,
+                customers, name,
+                nationalities, norad_ids,
                 reference_system, reused, regime
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 payload.get("id"),
@@ -237,15 +228,10 @@ def insert_payloads(data, cur):
                 payload.get("mass_kg"),
                 payload.get("orbit"),
                 payload.get("launch"),
-                payload.get("apoapsis_km"),
-                payload.get("arg_of_pericenter"),
                 payload.get("customers", []),
-                payload.get("eccentricity"),
-                payload.get("epoch"),
                 payload.get("name"),
-                payload.get("nationalities", []),
+                nationality,
                 payload.get("norad_ids", []),
-                payload.get("periapsis_km"),
                 payload.get("reference_system"),
                 payload.get("reused"),
                 payload.get("regime"),
@@ -261,7 +247,6 @@ def insert_launch_payloads(data, cur):
                 """
                 INSERT INTO launch_payloads (launch_id, payload_id)
                 VALUES (%s, %s)
-                ON CONFLICT (launch_id, payload_id) DO NOTHING;
             """,
                 (launch_id, payload_id),
             )
@@ -278,7 +263,6 @@ def insert_launch_cores(data, cur):
                 """
                 INSERT INTO launch_cores (launch_id, core_id, flight_number, reused, land_success)
                 VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (launch_id, core_id) DO NOTHING;
             """,
                 (
                     launch_id,
@@ -292,11 +276,6 @@ def insert_launch_cores(data, cur):
 
 def run_population():
     try:
-        if USE_DOCKER:
-            print("Starting Docker Compose...")
-            subprocess.run(["docker", "compose", "up", "-d"], check=True)
-
-        wait_for_db()
 
         conn = get_connection(database="spacex_bd2", user="spacex_api", password="spacex_api")
         cur = conn.cursor()
@@ -331,11 +310,6 @@ def run_population():
 
     except KeyboardInterrupt:
         print("Application interrupted by user.")
-    finally:
-        if USE_DOCKER:
-            print("Stopping Docker Compose...")
-            subprocess.run(["docker", "compose", "down"], check=True)
-
 
 if __name__ == "__main__":
     run_population()

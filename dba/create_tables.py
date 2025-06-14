@@ -16,7 +16,7 @@ def create_tables(cur):
                 description TEXT,
                 diameter FLOAT,
                 first_flight DATE,
-                flickr_images TEXT[], -- Array de URLs de imagens
+                flickr_images TEXT,
                 success_rate_pct INT,
                 wikipedia VARCHAR
             );
@@ -32,7 +32,7 @@ def create_tables(cur):
                 -- Adicionado depois da reunião
                 details TEXT,
                 full_name VARCHAR,
-                images TEXT[], -- Array de URLs de imagens
+                images TEXT, -- Array de URLs de imagens
                 latitude FLOAT,
                 longitude FLOAT,
                 launch_attempts INT,
@@ -78,7 +78,6 @@ def create_tables(cur):
                 time_system VARCHAR,
                 object_type VARCHAR,
                 launch_date TIMESTAMP,
-                decay_date TIMESTAMP,
                 eccentricity FLOAT,
                 inclination FLOAT,
                 classification_type VARCHAR,
@@ -111,15 +110,10 @@ def create_tables(cur):
                 launch_id VARCHAR,
                 
                 -- Adicionado depois da reunião
-                apoapsis_km FLOAT,
-                arg_of_pericenter FLOAT,
                 customers TEXT[], -- Array de clientes
-                eccentricity FLOAT,
-                epoch TIMESTAMP,
                 name VARCHAR,
                 nationalities TEXT,
                 norad_ids INT[], -- Array de IDs NORAD
-                periapsis_km FLOAT,
                 reference_system VARCHAR,
                 reused BOOLEAN,
                 regime VARCHAR,
@@ -158,7 +152,7 @@ def create_tables(cur):
             );
 
             -----------------------------------------------------------
-            -- Tabelas de relacionamento mantidas conforme necessidade
+            -- Tabelas de relacionamento
             -----------------------------------------------------------
             CREATE TABLE LAUNCH_PAYLOADS (
                 launch_id VARCHAR,

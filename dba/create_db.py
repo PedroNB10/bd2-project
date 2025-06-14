@@ -1,6 +1,4 @@
-from db_connection import get_connection, wait_for_db
-import subprocess
-from backend.config import USE_DOCKER
+from db_connection import get_connection
 import psycopg2
 from backend.config import DB_NAME
 
@@ -50,18 +48,6 @@ def create_database():
         if conn:
             conn.close()
 
-def start_docker():
-    # Inicia o Docker se USE_DOCKER for True
-    if USE_DOCKER:
-        print("Iniciando Docker...")
-        subprocess.run(["docker-compose", "up", "-d"], check=True)
-
-def stop_docker():
-    # Para o Docker se USE_DOCKER for True
-    if USE_DOCKER:
-        print("Parando Docker...")
-        subprocess.run(["docker-compose", "down"], check=True)
-
 def initialize_database():
     conn = None
     cur = None
@@ -97,13 +83,6 @@ def initialize_database():
         print("Banco de dados criado!")
 
 if __name__ == "__main__":
-    
-    start_docker() # Se USE_DOCKER for True
-    
-    # wait_for_db()
     create_database()
     
-    # wait_for_db()
     initialize_database() # Inicializa o banco com tabelas, usuários e índices
-
-    stop_docker() # Se USE_DOCKER for True
