@@ -1,0 +1,84 @@
+SÓ PRA TER UM CONTROLE MAIOR DO QUE A GENTE TA E NÃO TÁ USANDO
+
+rockets:
+    Colunas consideradas:
+    id, active, cost_per_launch, country, description, height, diameter, first_flight, 
+    flickr_images, mass, name, success_rate_pct, wikipedia
+    
+    Colunas não consideradas:
+    boosters, company, engines, first_stage, landing_legs, payload_weights, second_stage, 
+    stages, type
+
+launchpads:
+    Colunas consideradas:
+    id, name, locality, region, status, details, full_name, images, latitude, longitude, 
+    launch_attempts, launch_successes, timezone
+    
+    Colunas não consideradas:
+    launches, rockets
+
+launches:
+    Colunas consideradas:
+    id, date_utc, success, rocket_id, launchpad_id, details, name, static_fire_date_utc
+    
+    Colunas não consideradas:
+    auto_update, capsules, cores, crew, date_local, date_precision, date_unix, failures,
+    fairings, flight_number, launch_library_id, links, net, payloads, ships, 
+    static_fire_date_unix, tbd, upcoming, window
+
+starlink_satellites:
+    Colunas consideradas:
+    id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed,
+    creation_date, object_id, object_name, center_name, epoch, norad_cat_id, time_system,
+    object_type, launch_date, eccentricity, inclination, classification_type,
+    apoapsis, periapsis
+    
+    Colunas não consideradas:
+    decay_date, spaceTrack (usado na orbital_parameters)
+
+orbital_parameters:
+    Colunas consideradas:
+    norad_cat_id, object_name, inclination, semimajor_axis, period, eccentricity, epoch,
+    mean_motion, starlink_id
+    
+    Colunas não consideradas:
+    CCSDS_OMM_VERS, COMMENT, CREATION_DATE, ORIGINATOR, OBJECT_ID, CENTER_NAME, REF_FRAME,
+    TIME_SYSTEM, MEAN_ELEMENT_THEORY, RA_OF_ASC_NODE, ARG_OF_PERICENTER, MEAN_ANOMALY,
+    EPHEMERIS_TYPE, ELEMENT_SET_NO, REV_AT_EPOCH, BSTAR, MEAN_MOTION_DOT, MEAN_MOTION_DDOT,
+    OBJECT_TYPE, RCS_SIZE, COUNTRY_CODE, LAUNCH_DATE, SITE, DECAY_DATE, DECAYED, FILE,
+    GP_ID, TLE_LINE0, TLE_LINE1, TLE_LINE2
+
+payloads:
+    Colunas consideradas:
+    id, type, mass_kg, orbit, launch_id, customers,
+    name, nationalities, norad_ids, periapsis_km, reference_system,
+    reused, regime
+    
+    Colunas não consideradas:
+    dragon, inclination_deg, lifespan_years, longitude, manufacturers, mass_lbs,
+    mean_anomaly, mean_motion, period_min, raan, semi_major_axis_km, arg_of_pericenter,
+    apoapsis_km, eccentricity, epoch,
+
+crew:
+    Colunas consideradas:
+    id, name, status, launch_id, agency, image, wikipedia
+    
+    Colunas não consideradas:
+    launches
+
+cores:
+    Colunas consideradas:
+    id, serial, status, reuse_count, asds_attempts, asds_landings, rtls_attempts,
+    rtls_landings, last_update
+    
+    Colunas não consideradas:
+    block, launches
+
+
+Tabelas não consideradas:
+    - capsules
+    - company_info
+    - dragons
+    - history
+    - roadster
+    - ships

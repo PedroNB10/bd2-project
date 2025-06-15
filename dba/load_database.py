@@ -1,8 +1,6 @@
-import subprocess
 import requests
-from db_connection import get_connection, wait_for_db
-from backend.config import USE_DOCKER
-
+from db_connection import get_connection
+import psycopg2
 
 def fetch_data(endpoint):
     url = f"https://api.spacexdata.com/v4/{endpoint}"
@@ -15,16 +13,27 @@ def insert_rockets(data, cur):
     for rocket in data:
         cur.execute(
             """
-            INSERT INTO rockets (id, name, height, mass, cost_per_launch)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            INSERT INTO rockets (
+                id, name, height, mass, cost_per_launch,
+                active, country, description, diameter, first_flight,
+                flickr_images, success_rate_pct, wikipedia
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 rocket.get("id"),
                 rocket.get("name"),
-                rocket.get("height", {}).get("meters"),
-                rocket.get("mass", {}).get("kg"),
+                rocket.get("height").get("meters"),
+                rocket.get("mass").get("kg"),
                 rocket.get("cost_per_launch"),
+                rocket.get("active"),
+                rocket.get("country"),
+                rocket.get("description"),
+                rocket.get("diameter").get("meters"),
+                rocket.get("first_flight"),
+                rocket.get("flickr_images")[0],
+                rocket.get("success_rate_pct"),
+                rocket.get("wikipedia"),
             ),
         )
 
@@ -33,9 +42,12 @@ def insert_launchpads(data, cur):
     for pad in data:
         cur.execute(
             """
-            INSERT INTO launchpads (id, name, locality, region, status)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            INSERT INTO launchpads (
+                id, name, locality, region, status,
+                details, full_name, images, latitude, longitude,
+                launch_attempts, launch_successes, timezone
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 pad.get("id"),
@@ -43,6 +55,14 @@ def insert_launchpads(data, cur):
                 pad.get("locality"),
                 pad.get("region"),
                 pad.get("status"),
+                pad.get("details"),
+                pad.get("full_name"),
+                pad.get("images").get("large")[0],
+                pad.get("latitude"),
+                pad.get("longitude"),
+                pad.get("launch_attempts"),
+                pad.get("launch_successes"),
+                pad.get("timezone"),
             ),
         )
 
@@ -51,39 +71,44 @@ def insert_crew(data, cur):
     for member in data:
         cur.execute(
             """
-            INSERT INTO crew (id, name, status, launch_id)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            INSERT INTO crew (
+                id, name, status, launch_id,
+                agency, image, wikipedia
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 member.get("id"),
                 member.get("name"),
                 member.get("status"),
                 member.get("launches")[0],
+                member.get("agency"),
+                member.get("image"),
+                member.get("wikipedia"),
             ),
         )
 
 
 def insert_cores(data, cur):
     for core in data:
-        core_id = core.get("id")
-        if core_id is None:
-            continue
         cur.execute(
             """
-            INSERT INTO cores (id, serial, status, reuse_count, asds_attempts, asds_landings, rtls_attempts, rtls_landings)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            INSERT INTO cores (
+                id, serial, status, reuse_count, asds_attempts,
+                asds_landings, rtls_attempts, rtls_landings, last_update
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
             (
-                core_id,
+                core.get("id"),
                 core.get("serial"),
                 core.get("status"),
-                core.get("reuse_count", 0),
-                core.get("asds_attempts", 0),
-                core.get("asds_landings", 0),
-                core.get("rtls_attempts", 0),
-                core.get("rtls_landings", 0),
+                core.get("reuse_count"),
+                core.get("asds_attempts"),
+                core.get("asds_landings"),
+                core.get("rtls_attempts"),
+                core.get("rtls_landings"),
+                core.get("last_update"),
             ),
         )
 
@@ -92,9 +117,11 @@ def insert_launches(data, cur):
     for launch in data:
         cur.execute(
             """
-            INSERT INTO launches (id, date_utc, success, rocket_id, launchpad_id)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
+            INSERT INTO launches (
+                id, date_utc, success, rocket_id, launchpad_id,
+                details, name
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
             (
                 launch.get("id"),
@@ -102,6 +129,8 @@ def insert_launches(data, cur):
                 launch.get("success"),
                 launch.get("rocket"),
                 launch.get("launchpad"),
+                launch.get("details"),
+                launch.get("name"),
             ),
         )
 
@@ -110,79 +139,114 @@ def insert_starlink_satellites(data, cur):
     for item in data:
         cur.execute(
             """
-            INSERT INTO starlink_satellites (id, height_km, latitude, longitude, velocity_kms, version, launch_id, decayed)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
-        """,
+            INSERT INTO starlink_satellites (
+                id, version, launch_id, height_km, latitude, longitude, velocity_kms
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
             (
                 item.get("id"),
+                item.get("version"),
+                item.get("launch"),  # Este é o launch_id na tabela
                 item.get("height_km"),
                 item.get("latitude"),
                 item.get("longitude"),
                 item.get("velocity_kms"),
-                item.get("version"),
-                item.get("launch"),  # Aqui está a correção
-                (
-                    bool(item.get("spaceTrack", {}).get("DECAYED"))
-                    if item.get("spaceTrack")
-                    else None
-                ),
             ),
         )
 
 
 def insert_orbital_parameters(data, cur):
     for item in data:
-        spaceTrack = item.get("spaceTrack", {})
+        space_track = item.get("spaceTrack", {})
         cur.execute(
             """
-            INSERT INTO orbital_parameters (norad_cat_id, object_name, inclination, semimajor_axis, period,
-                                            eccentricity, epoch, mean_motion, country_code, starlink_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (norad_cat_id) DO NOTHING;
-        """,
+            INSERT INTO orbital_parameters (
+                norad_cat_id, starlink_id, object_id, object_name,
+                inclination, eccentricity, semimajor_axis, period,
+                mean_motion, apoapsis, periapsis,
+                epoch, launch_date,
+                decayed,
+                creation_date, time_system, classification_type,
+                object_type, center_name
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
             (
-                spaceTrack.get("NORAD_CAT_ID"),
-                spaceTrack.get("OBJECT_NAME"),
-                spaceTrack.get("INCLINATION"),
-                spaceTrack.get("SEMIMAJOR_AXIS"),
-                spaceTrack.get("PERIOD"),
-                spaceTrack.get("ECCENTRICITY"),
-                spaceTrack.get("EPOCH"),
-                spaceTrack.get("MEAN_MOTION"),
-                spaceTrack.get("COUNTRY_CODE"),
-                item.get("id"),  # O ID da linha que armazena esse dicionário
+                space_track.get("NORAD_CAT_ID"),
+                item.get("id"),  # Chave estrangeira para starlink_satellites
+                space_track.get("OBJECT_ID"),
+                space_track.get("OBJECT_NAME"),
+                space_track.get("INCLINATION"),
+                space_track.get("ECCENTRICITY"),
+                space_track.get("SEMIMAJOR_AXIS"),
+                space_track.get("PERIOD"),
+                space_track.get("MEAN_MOTION"),
+                space_track.get("APOAPSIS"),
+                space_track.get("PERIAPSIS"),
+                space_track.get("EPOCH"),
+                space_track.get("LAUNCH_DATE"),
+                bool(space_track.get("DECAYED")) if space_track else None,
+                space_track.get("CREATION_DATE"),
+                space_track.get("TIME_SYSTEM"),
+                space_track.get("CLASSIFICATION_TYPE"),
+                space_track.get("OBJECT_TYPE"),
+                space_track.get("CENTER_NAME"),
             ),
         )
 
 
 def insert_payloads(data, cur):
     for payload in data:
-        launch_id = payload.get("launch")
+        # AGORA EU TO FAZENDO ISSO COM TRIGGER
+        # launch_id = payload.get("launch")
+        # cur.execute("SELECT id FROM launches WHERE id = %s", (launch_id,))
+        # if not cur.fetchone():
+        #     print(f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}")
+        #     continue
+        
+        # Tratamento para nationality
+        nationalities = payload.get("nationalities", [])
+        nationality = nationalities[0] if nationalities else None
 
-        # Verifique se o launch_id existe em launches
-        # Essa etapa é necessária pois tem launch_is em payload q n n existe na tabela launches
-        cur.execute("SELECT id FROM launches WHERE id = %s", (launch_id,))
-        if not cur.fetchone():
-            print(
-                f"Launch ID {launch_id} não encontrado. Pulando payload {payload['id']}"
+        try:
+            cur.execute(
+                """
+                INSERT INTO payloads (
+                    id, type, mass_kg, orbit, launch_id,
+                    customers, name,
+                    nationalities, norad_ids,
+                    reference_system, reused, regime
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    payload.get("id"),
+                    payload.get("type"),
+                    payload.get("mass_kg"),
+                    payload.get("orbit"),
+                    payload.get("launch"),
+                    payload.get("customers"),
+                    payload.get("name"),
+                    nationality,
+                    payload.get("norad_ids"),
+                    payload.get("reference_system"),
+                    payload.get("reused"),
+                    payload.get("regime"),
+                ),
             )
-            continue  # Ignora este payload
-
-        cur.execute(
-            """
-            INSERT INTO payloads (id, type, mass_kg, orbit, launch_id)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING;
-        """,
-            (
-                payload.get("id"),
-                payload.get("type"),
-                payload.get("mass_kg"),
-                payload.get("orbit"),
-                payload.get("launch"),
-            ),
-        )
+            
+            # Verifica se há notificações do PostgreSQL
+            notices = cur.connection.notices
+            if notices:
+                for notice in notices:
+                    print(notice)  # Mostra a mensagem para o usuário
+                cur.connection.notices = []  # Limpa as notificações após exibir
+            
+        except Exception as e:
+            # Se ocorrer algum outro erro (além do trigger)
+            print(f"Erro ao inserir payload {payload.get('id')}: {str(e)}")
+            continue
 
 
 def insert_launch_payloads(data, cur):
@@ -193,7 +257,6 @@ def insert_launch_payloads(data, cur):
                 """
                 INSERT INTO launch_payloads (launch_id, payload_id)
                 VALUES (%s, %s)
-                ON CONFLICT (launch_id, payload_id) DO NOTHING;
             """,
                 (launch_id, payload_id),
             )
@@ -210,7 +273,6 @@ def insert_launch_cores(data, cur):
                 """
                 INSERT INTO launch_cores (launch_id, core_id, flight_number, reused, land_success)
                 VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (launch_id, core_id) DO NOTHING;
             """,
                 (
                     launch_id,
@@ -224,13 +286,8 @@ def insert_launch_cores(data, cur):
 
 def run_population():
     try:
-        if USE_DOCKER:
-            print("Starting Docker Compose...")
-            subprocess.run(["docker", "compose", "up", "-d"], check=True)
 
-        wait_for_db()
-
-        conn = get_connection(database="spacex_bd2")
+        conn = get_connection(database="spacex_bd2", user="spacex_api", password="spacex_api")
         cur = conn.cursor()
 
         rockets = fetch_data("rockets")
@@ -251,6 +308,7 @@ def run_population():
 
         insert_starlink_satellites(starlink_data, cur)
         insert_orbital_parameters(starlink_data, cur)
+        
         insert_payloads(payloads, cur)
 
         insert_launch_payloads(launches, cur)
@@ -263,11 +321,6 @@ def run_population():
 
     except KeyboardInterrupt:
         print("Application interrupted by user.")
-    finally:
-        if USE_DOCKER:
-            print("Stopping Docker Compose...")
-            subprocess.run(["docker", "compose", "down"], check=True)
-
 
 if __name__ == "__main__":
     run_population()
