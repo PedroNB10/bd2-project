@@ -33,10 +33,9 @@ class LaunchCoreDao(BaseDAO):
         pass
 
     def get_columns(self):
-
         with self.get_session() as session:
                 core = session.query(LaunchCores).first()
                 columns = core.__table__.columns
                 session.expunge_all()
 
-                return columns.keys()
+                return [(col.name, str(col.type)) for col in columns]

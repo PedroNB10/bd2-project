@@ -39,4 +39,5 @@ class CrewDao(BaseDAO):
                 columns = core.__table__.columns
                 session.expunge_all()
 
-                return columns.keys()
+                # return columns.keys()
+                return [(col.name, str(col.type)) for col in columns]

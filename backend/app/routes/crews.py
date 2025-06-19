@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.controllers.crews_controller import CrewsController
 
-crews_bp = Blueprint("crews", __name__)
+crews_bp = Blueprint("crew", __name__)
 
 crews_controller = CrewsController()
 
