@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
+import DataTable from 'react-data-table-component';
+import { CSVLink } from 'react-csv';
 
 interface Filtro {
     coluna: string;
@@ -26,7 +28,8 @@ const operadoresPorTipo: Record<string, string[]> = {
     date: ['igual a', 'maior que', 'menor que', 'maior ou igual a', 'menor ou igual a', 'entre'],
     varchar: ['igual a', 'parecido com'],
     text: ['igual a', 'parecido com'],
-    boolean: ['igual a', 'diferente de']
+    boolean: ['igual a', 'diferente de'],
+    datetime : ['entre']
 };
 
 
@@ -48,7 +51,7 @@ const RelatorioAdHoc: React.FC = () => {
     };
 
     const adicionarFiltro = () => {
-        setFiltros([...filtros, { coluna: '', tipo: '', operador: '=', valor: '' }]);
+        setFiltros([...filtros, { coluna: '', tipo: '', operador: 'Selecione...', valor: '' }]);
     };
 
     const atualizarFiltro = (index: number, campo: keyof Filtro, novoValor: any) => {
@@ -124,7 +127,7 @@ const RelatorioAdHoc: React.FC = () => {
             Promise.all(
                 adicionadas.map(tabela =>
                     axios
-                        .get<[string, string][]>(`http://192.168.1.103:3000/api/${tabela}/columns`)
+                        .get<[string, string][]>(`/api/${tabela}/columns`)
                         .then(res => res.data.map(([col, tipo]) => ({
                             nome: `${tabela}_${col}`,
                             tipo: tipo.toLowerCase()
@@ -150,29 +153,6 @@ const RelatorioAdHoc: React.FC = () => {
         }
     }, [tabelasSelecionadas]);
 
-    // const buscarDados = () => {
-    //     const estrutura = {
-    //         tabelas: tabelasSelecionadas,
-    //         colunas: colunasSelecionadas.map(col => {
-    //             const [tabela, ...resto] = col.split('_');
-    //             return `${tabela}.${resto.join('_')}`;
-    //         }),
-    //         filtros: filtros
-    //             .filter(f => f.coluna && f.operador && f.valor !== '')
-    //             .map(f => ({
-    //                 coluna: f.coluna.replace('_', '.'),
-    //                 operador: f.operador,
-    //                 valor: f.valor
-    //             }))
-    //     };
-
-    //     console.log('🔍 Estrutura pronta para o back:');
-    //     console.log(JSON.stringify(estrutura, null, 2));
-
-
-
-
-    // };
     const buscarDados = () => {
         const estrutura = {
             tabelas: tabelasSelecionadas,
@@ -189,7 +169,7 @@ const RelatorioAdHoc: React.FC = () => {
                 }))
         };
 
-        console.log('🔍 Estrutura pronta para o back:');
+        console.log('Estrutura pronta para o back:');
         console.log(JSON.stringify(estrutura, null, 2));
 
         axios.post('/api/relatorio', estrutura)
@@ -202,6 +182,13 @@ const RelatorioAdHoc: React.FC = () => {
                 setDados([]); // limpa dados em caso de erro
             });
     };
+    const colunasTabela = dados.length > 0
+    ? Object.keys(dados[0]).map(col => ({
+          name: String(col),
+          selector: (row: any) => String(row[col]),
+          sortable: true,
+      }))
+    : [];
 
 
     return (
@@ -326,7 +313,27 @@ const RelatorioAdHoc: React.FC = () => {
                                             <option value="true">Verdadeiro</option>
                                             <option value="false">Falso</option>
                                         </select>
-                                    ) : (
+                                    ) : tipo === 'datetime' && filtro.operador === 'entre' ? (
+                                        <>
+                                            <input
+                                                type="date"
+                                                value={Array.isArray(filtro.valor) ? filtro.valor[0] : ''}
+                                                onChange={(e) => {
+                                                    const fim = Array.isArray(filtro.valor) ? filtro.valor[1] : '';
+                                                    atualizarFiltro(i, 'valor', [e.target.value, fim]);
+                                                }}
+                                            />
+                                            <input
+                                                type="date"
+                                                value={Array.isArray(filtro.valor) ? filtro.valor[1] : ''}
+                                                onChange={(e) => {
+                                                    const inicio = Array.isArray(filtro.valor) ? filtro.valor[0] : '';
+                                                    atualizarFiltro(i, 'valor', [inicio, e.target.value]);
+                                                }}
+                                            />
+                                        </>
+                                    ) :                                                                       
+                                    (
                                         <input
                                             type="text"
                                             placeholder="Valor"
@@ -346,27 +353,28 @@ const RelatorioAdHoc: React.FC = () => {
                     <button onClick={buscarDados}>Buscar</button>
                 </>
             )}
-
             {dados.length > 0 && (
-                <table>
-                    <thead>
-                        <tr>
-                            {Object.keys(dados[0]).map((col, i) => (
-                                <th key={i}>{col}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {dados.map((linha, i) => (
-                            <tr key={i}>
-                                {Object.keys(dados[0]).map((col, j) => (
-                                    <td key={j}>{linha[col]}</td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
+                  <>
+                      <div style={{ marginBottom: '1rem' }}>
+                          <CSVLink
+                              data={dados}
+                              filename="relatorio.csv"
+                              className="btn btn-primary"
+                              target="_blank"
+                          >
+                              Exportar CSV
+                          </CSVLink>
+                      </div>
+                      <DataTable
+                          columns={colunasTabela}
+                          data={dados}
+                          pagination
+                          highlightOnHover
+                          responsive
+                          striped
+                      />
+                  </>
+              )}
 
         </div>
     );
