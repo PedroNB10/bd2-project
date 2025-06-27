@@ -185,6 +185,5 @@ class OrbitalParameters(Base):
     eccentricity: Mapped[Optional[float]] = mapped_column(Double(53))
     epoch: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     mean_motion: Mapped[Optional[float]] = mapped_column(Double(53))
-    country_code: Mapped[Optional[str]] = mapped_column(String(3))
 
     starlink: Mapped['StarlinkSatellites'] = relationship('StarlinkSatellites', back_populates='orbital_parameters')
