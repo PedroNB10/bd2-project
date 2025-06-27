@@ -105,9 +105,9 @@ const RelatorioAdHoc: React.FC = () => {
     };
 
     const tabelas: string[] = [
-        'rockets', 'cores', 'orbitals', 'crew',
+        'rockets', 'cores', 'orbital_parameters', 'crew',
         'launchpads', 'launches', 'launchcores',
-        'payloads', 'starlinksatellites'
+        'payloads', 'starlink_satellites'
     ];
 
     const prevTabelas = useRef<string[]>([]);
@@ -190,6 +190,37 @@ const RelatorioAdHoc: React.FC = () => {
       }))
     : [];
 
+    const podeSelecionarTabela = function(tabela: string, selecionadas: string[]) {
+        if (selecionadas.length === 0) return true;
+
+        const primeira = selecionadas[0];
+
+        // Mantém visível as já selecionadas
+        if (selecionadas.includes(tabela)) return true;
+
+        if (primeira === 'orbital_parameters') {
+            // Orbital_parameters só se conecta com starlink_satellites
+            return tabela === 'starlink_satellites';
+        }
+
+        if (primeira === 'starlink_satellites') {
+            // Starlink_Satellites pode ir com orbital_parameters ou launches
+            return tabela === 'orbital_parameters' || tabela === 'launches';
+        }
+
+        if (selecionadas.includes('launches')) {
+            if (tabela === 'orbital_parameters') {
+            // Orbital_parameters só aparece se starlink_satellites estiver também
+            return selecionadas.includes('starlink_satellites');
+            }
+            // Qualquer outra tabela é permitida
+            return true;
+        }
+
+        // Qualquer outra primeira tabela → só permite launches como segunda
+        return tabela === 'launches';
+    }
+
 
     return (
         <div>
@@ -200,14 +231,17 @@ const RelatorioAdHoc: React.FC = () => {
                 isMulti
                 options={tabelas
                     // Se nenhuma tabela foi selecionada OU 'launches' está entre as selecionadas → mostra tudo
-                    .filter(tabela => {
-                        return (
-                            tabelasSelecionadas.length === 0 ||
-                            tabelasSelecionadas.includes('launches') ||
-                            tabelasSelecionadas.includes(tabela) || // mantém as já selecionadas
-                            tabela === 'launches' // permite adicionar launches
-                        );
-                    })
+                    // .filter(tabela => {
+                    //     return (
+                    //         tabelasSelecionadas.length === 0 ||
+                    //         tabelasSelecionadas.includes('launches') ||
+                    //         tabelasSelecionadas.includes(tabela) || // mantém as já selecionadas
+                    //         tabela === 'launches' // permite adicionar launches
+                    //     );
+                    // })
+                    // .map(t => ({ label: t, value: t }))
+    
+                    .filter(t => podeSelecionarTabela(t, tabelasSelecionadas))
                     .map(t => ({ label: t, value: t }))
                 }
                 value={tabelasSelecionadas.map(t => ({ label: t, value: t }))}
