@@ -129,7 +129,7 @@ const RelatorioAdHoc: React.FC = () => {
                     axios
                         .get<[string, string][]>(`/api/${tabela}/columns`)
                         .then(res => res.data.map(([col, tipo]) => ({
-                            nome: `${tabela}_${col}`,
+                            nome: `${tabela}/${col}`,
                             tipo: tipo.toLowerCase()
                         })))
                         .catch(err => {
@@ -145,10 +145,10 @@ const RelatorioAdHoc: React.FC = () => {
 
         if (removidas.length > 0) {
             setColunasDisponiveis(prev =>
-                prev.filter(col => !removidas.some(tab => col.nome.startsWith(`${tab}_`)))
+                prev.filter(col => !removidas.some(tab => col.nome.startsWith(`${tab}/`)))
             );
             setColunasSelecionadas(prev =>
-                prev.filter(col => !removidas.some(tab => col.startsWith(`${tab}_`)))
+                prev.filter(col => !removidas.some(tab => col.startsWith(`${tab}/`)))
             );
         }
     }, [tabelasSelecionadas]);
@@ -157,13 +157,13 @@ const RelatorioAdHoc: React.FC = () => {
         const estrutura = {
             tabelas: tabelasSelecionadas,
             colunas: colunasSelecionadas.map(col => {
-                const [tabela, ...resto] = col.split('_');
+                const [tabela, ...resto] = col.split('/');
                 return `${tabela}.${resto.join('_')}`;
             }),
             filtros: filtros
                 .filter(f => f.coluna && f.operador && f.valor !== '')
                 .map(f => ({
-                    coluna: f.coluna.replace('_', '.'),
+                    coluna: f.coluna.replace('/', '.'),
                     operador: f.operador,
                     valor: f.valor
                 }))
@@ -220,7 +220,6 @@ const RelatorioAdHoc: React.FC = () => {
         // Qualquer outra primeira tabela → só permite launches como segunda
         return tabela === 'launches';
     }
-
 
     return (
         <div>
