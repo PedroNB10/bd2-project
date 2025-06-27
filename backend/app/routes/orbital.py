@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.controllers.orbital_controller import OrbitalsController
 
-orbitals_bp = Blueprint("orbitals", __name__)
+orbitals_bp = Blueprint("orbital_parameters", __name__)
 
 orbitals_controller = OrbitalsController()
 
