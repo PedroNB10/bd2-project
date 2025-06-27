@@ -193,25 +193,23 @@ const RelatorioAdHoc: React.FC = () => {
     const podeSelecionarTabela = function(tabela: string, selecionadas: string[]) {
         if (selecionadas.length === 0) return true;
 
-        const primeira = selecionadas[0];
-
         // Mantém visível as já selecionadas
         if (selecionadas.includes(tabela)) return true;
 
-        if (primeira === 'orbital_parameters') {
+        if (selecionadas.includes('orbital_parameters') && selecionadas.length === 1 ) {
             // Orbital_parameters só se conecta com starlink_satellites
             return tabela === 'starlink_satellites';
         }
 
-        if (primeira === 'starlink_satellites') {
+        if (selecionadas.includes('starlink_satellites') && selecionadas.length === 1) {
             // Starlink_Satellites pode ir com orbital_parameters ou launches
             return tabela === 'orbital_parameters' || tabela === 'launches';
         }
 
         if (selecionadas.includes('launches')) {
             if (tabela === 'orbital_parameters') {
-            // Orbital_parameters só aparece se starlink_satellites estiver também
-            return selecionadas.includes('starlink_satellites');
+                // Orbital_parameters só aparece se starlink_satellites estiver também
+                return selecionadas.includes('starlink_satellites');
             }
             // Qualquer outra tabela é permitida
             return true;
@@ -228,32 +226,13 @@ const RelatorioAdHoc: React.FC = () => {
             <label>Tabelas:</label>
             <Select
                 isMulti
-                options={tabelas
-                    // Se nenhuma tabela foi selecionada OU 'launches' está entre as selecionadas → mostra tudo
-                    // .filter(tabela => {
-                    //     return (
-                    //         tabelasSelecionadas.length === 0 ||
-                    //         tabelasSelecionadas.includes('launches') ||
-                    //         tabelasSelecionadas.includes(tabela) || // mantém as já selecionadas
-                    //         tabela === 'launches' // permite adicionar launches
-                    //     );
-                    // })
-                    // .map(t => ({ label: t, value: t }))
-    
+                options={tabelas   
                     .filter(t => podeSelecionarTabela(t, tabelasSelecionadas))
                     .map(t => ({ label: t, value: t }))
                 }
                 value={tabelasSelecionadas.map(t => ({ label: t, value: t }))}
                 onChange={(selectedOptions) => {
                     const valores = selectedOptions.map(opt => opt.value);
-
-                    // Se o usuário de alguma forma burlar e selecionar várias tabelas sem launches, limpa
-                    if (valores.length > 1 && !valores.includes('launches')) {
-                        // Opcional: aqui você pode alertar ou corrigir
-                        setTabelasSelecionadas([valores[0]]);
-                        return;
-                    }
-
                     setTabelasSelecionadas(valores);
                 }}
                 placeholder="Selecione tabelas..."
