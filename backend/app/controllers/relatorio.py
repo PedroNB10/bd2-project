@@ -13,8 +13,9 @@ class RelatorioController:
             tabelas = payload['tabelas']
             colunas = payload['colunas']
             filtros = payload.get('filtros', [])
+            agregacoes = payload.get('agregacoes',[])
 
-            dados = self.relatorio.buscar_dados(tabelas, colunas, filtros)
+            dados = self.relatorio.buscar_dados(tabelas, colunas, filtros,agregacoes)
 
             return jsonify(dados)
 

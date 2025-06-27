@@ -20,6 +20,16 @@ interface DadosAPI {
     [key: string]: any;
 }
 
+interface Agregacao {
+  coluna: string;
+  funcao: string;
+  alias?: string;
+  having?: {
+    operador: string;
+    valor: number;
+  };
+}
+
 
 const operadoresPorTipo: Record<string, string[]> = {
     integer: ['igual a', 'maior que', 'menor que', 'maior ou igual a', 'menor ou igual a', 'entre'],
@@ -39,12 +49,36 @@ const RelatorioAdHoc: React.FC = () => {
     const [colunasSelecionadas, setColunasSelecionadas] = useState<string[]>([]);
     const [dados, setDados] = useState<DadosAPI[]>([]);
     const [filtros, setFiltros] = useState<Filtro[]>([]);
-
+    // const [colunasAgregadas, setColunasAgregadas] = useState<ColunaAgregada[]>([]);
+    const [agregacoes, setAgregacoes] = useState<Agregacao[]>([]);
 
     const obterTipoColuna = (colunaNome: string): string => {
         const found = colunasDisponiveis.find(c => c.nome === colunaNome);
         return found?.tipo || 'varchar';
     };
+
+    const adicionarAgregacao = () => {
+        setAgregacoes([...agregacoes, { coluna: '', funcao: 'COUNT' }]);
+    };
+
+    const atualizarAgregacao = (index: number, campo: keyof Agregacao, valor: any) => {
+        const novas : any = [...agregacoes];
+        novas[index][campo] = valor;
+        setAgregacoes(novas);
+    };
+
+    const atualizarHaving = (index: number, campo: 'operador' | 'valor', valor: any) => {
+        const novas : any  = [...agregacoes];
+        if (!novas[index].having) 
+            novas[index].having = { operador: '>', valor: 0 };
+        novas[index].having![campo] = valor;
+        setAgregacoes(novas);
+    };
+
+    const removerAgregacao = (index: number) => {
+    setAgregacoes(agregacoes.filter((_, i) => i !== index));
+    };
+
 
     const obterOperadores = (tipo: string): string[] => {
         return operadoresPorTipo[tipo] || ['='];
@@ -154,7 +188,7 @@ const RelatorioAdHoc: React.FC = () => {
     }, [tabelasSelecionadas]);
 
     const buscarDados = () => {
-        const estrutura = {
+       const estrutura = {
             tabelas: tabelasSelecionadas,
             colunas: colunasSelecionadas.map(col => {
                 const [tabela, ...resto] = col.split('/');
@@ -163,10 +197,16 @@ const RelatorioAdHoc: React.FC = () => {
             filtros: filtros
                 .filter(f => f.coluna && f.operador && f.valor !== '')
                 .map(f => ({
-                    coluna: f.coluna.replace('/', '.'),
-                    operador: f.operador,
-                    valor: f.valor
-                }))
+                coluna: f.coluna.replace('/', '.'),
+                operador: f.operador,
+                valor: f.valor
+                })),
+            agregacoes: agregacoes.map(agg => ({
+                coluna: agg.coluna.replace('/', '.'),
+                funcao: agg.funcao,
+                alias: agg.alias ? agg.alias : agg.coluna.replace('/', '.') + " (" + agg.funcao + ")",
+                having: agg.having
+            }))
         };
 
         console.log('Estrutura pronta para o back:');
@@ -182,6 +222,7 @@ const RelatorioAdHoc: React.FC = () => {
                 setDados([]); // limpa dados em caso de erro
             });
     };
+    
     const colunasTabela = dados.length > 0
     ? Object.keys(dados[0]).map(col => ({
           name: String(col),
@@ -261,6 +302,67 @@ const RelatorioAdHoc: React.FC = () => {
                     />
 
                     <div style={{ marginTop: '1rem' }}>
+                        <h4>Agregações</h4>
+                        {agregacoes.map((agg, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            {/* Coluna (somente das já selecionadas) */}
+                            <Select
+                                options={colunasSelecionadas.map(col => ({ label: col, value: col }))}
+                                value={agg.coluna ? { label: agg.coluna, value: agg.coluna } : null}
+                                onChange={(opt) => atualizarAgregacao(i, 'coluna', opt?.value)}
+                                placeholder="Coluna"
+                                styles={customStyles}
+                            />
+
+                            {/* Função agregada */}
+                            <Select
+                                options={['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'].map(func => ({
+                                label: func, value: func
+                                }))}
+                                value={{ label: agg.funcao, value: agg.funcao }}
+                                onChange={(opt) => atualizarAgregacao(i, 'funcao', opt?.value)}
+                                placeholder="Função"
+                                styles={customStyles}
+                            />
+
+                            {/* Alias */}
+                            <input
+                                type="text"
+                                placeholder="Alias (opcional)"
+                                value={agg.alias || ''}
+                                onChange={(e) => atualizarAgregacao(i, 'alias', e.target.value)}
+                            />
+
+                            {/* HAVING opcional */}
+                            <select
+                                value={agg.having?.operador || '>'}
+                                onChange={(e) => atualizarHaving(i, 'operador', e.target.value)}
+                            >
+                                <option value=">">Maior</option>
+                                <option value=">=">Maior igual</option>
+                                <option value="<">Menor</option>
+                                <option value="<=">Menor igual</option>
+                                <option value="=">Igual</option>
+                                <option value="!=">Diferente</option>
+                            </select>
+
+                            <input
+                                type="number"
+                                placeholder="Valor HAVING"
+                                value={agg.having?.valor || ''}
+                                onChange={(e) => atualizarHaving(i, 'valor', Number(e.target.value))}
+                            />
+
+                            <button onClick={() => removerAgregacao(i)}>X</button>
+                            </div>
+                        ))}
+                        <button onClick={adicionarAgregacao}>Adicionar Agregação</button>
+                    </div>
+
+
+                    
+
+                    <div style={{ marginTop: '1rem' }}>
                         <h4>Filtros</h4>
                         {filtros.map((filtro, i) => {
                             const tipo = obterTipoColuna(filtro.coluna);
@@ -269,10 +371,10 @@ const RelatorioAdHoc: React.FC = () => {
                             return (
                                 <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                     <Select
-                                        options={colunasSelecionadas.map(col => ({
-                                            label: col,
-                                            value: col
-                                        }))}
+                                        options={colunasDisponiveis.map(col => ({
+                                            label: col.nome,
+                                            value: col.nome
+                                            }))}
                                         value={filtro.coluna ? { label: filtro.coluna, value: filtro.coluna } : null}
                                         onChange={(opt) => {
                                             const tipoCol = obterTipoColuna(opt?.value || '');
