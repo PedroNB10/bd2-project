@@ -347,7 +347,7 @@ const RelatorioAdHoc: React.FC = () => {
                                         {/* Coluna (somente das já selecionadas) */}
                                         <div className='col-md-3 me-3'>
                                             <Select
-                                                options={colunasSelecionadas.map(col => ({ label: col, value: col }))}
+                                                options={colunasDisponiveis.map(col => ({ label: col.nome, value: col.nome }))}
                                                 value={agg.coluna ? { label: agg.coluna, value: agg.coluna } : null}
                                                 onChange={(opt) => atualizarAgregacao(i, 'coluna', opt?.value)}
                                                 placeholder="Coluna"

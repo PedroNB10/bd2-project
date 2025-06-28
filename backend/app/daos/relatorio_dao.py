@@ -123,6 +123,8 @@ class RelatorioDao(BaseDAO):
                 if having_conditions:
                     query = query.having(and_(*having_conditions))
 
+                print(query)
+
                 resultado = session.execute(query)
                 rows = resultado.fetchall()
                 keys = resultado.keys()
