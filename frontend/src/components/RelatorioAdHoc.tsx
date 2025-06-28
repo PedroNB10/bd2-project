@@ -268,6 +268,10 @@ const RelatorioAdHoc: React.FC = () => {
 
         // Mantém visível as já selecionadas
         if (selecionadas.includes(tabela)) return true;
+        
+        if (selecionadas.includes('cores') && selecionadas.length === 1) {
+            return tabela === 'launchcores' || tabela === 'launches';
+        }
 
         if (selecionadas.includes('orbital_parameters') && selecionadas.length === 1) {
             // Orbital_parameters só se conecta com starlink_satellites
@@ -284,6 +288,7 @@ const RelatorioAdHoc: React.FC = () => {
                 // Orbital_parameters só aparece se starlink_satellites estiver também
                 return selecionadas.includes('starlink_satellites');
             }
+
             // Qualquer outra tabela é permitida
             return true;
         }
