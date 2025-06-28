@@ -270,7 +270,7 @@ const RelatorioAdHoc: React.FC = () => {
         if (selecionadas.includes(tabela)) return true;
         
         if (selecionadas.includes('cores') && selecionadas.length === 1) {
-            return tabela === 'launchcores' || tabela === 'launches';
+            return tabela === 'launchcores';
         }
 
         if (selecionadas.includes('orbital_parameters') && selecionadas.length === 1) {
