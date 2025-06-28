@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.controllers.launchcores_controller import LaunchCoresController
 
-launchcores_bp = Blueprint("launchcores", __name__)
+launchcores_bp = Blueprint("launch_cores", __name__)
 
 launchcores_controller = LaunchCoresController()
 
