@@ -165,7 +165,7 @@ const RelatorioAdHoc: React.FC = () => {
 
     const tabelas: string[] = [
         'rockets', 'cores', 'orbital_parameters', 'crew',
-        'launchpads', 'launches', 'launchcores',
+        'launchpads', 'launches', 'launch_cores',
         'payloads', 'starlink_satellites'
     ];
 
@@ -270,7 +270,7 @@ const RelatorioAdHoc: React.FC = () => {
         if (selecionadas.includes(tabela)) return true;
         
         if (selecionadas.includes('cores') && selecionadas.length === 1) {
-            return tabela === 'launchcores';
+            return tabela === 'launch_cores';
         }
 
         if (selecionadas.includes('orbital_parameters') && selecionadas.length === 1) {
