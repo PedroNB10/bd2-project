@@ -3,6 +3,8 @@ import axios from 'axios';
 import Select from 'react-select';
 import DataTable from 'react-data-table-component';
 import { CSVLink } from 'react-csv';
+import { toast } from 'react-toastify';
+import rocketLoader from '../assets/rocket-loader.gif'; // caminho relativo ao seu componente
 
 interface Filtro {
     coluna: string;
@@ -21,13 +23,13 @@ interface DadosAPI {
 }
 
 interface Agregacao {
-  coluna: string;
-  funcao: string;
-  alias?: string;
-  having?: {
-    operador: string;
-    valor: number;
-  };
+    coluna: string;
+    funcao: string;
+    alias?: string;
+    having?: {
+        operador: string;
+        valor: number;
+    };
 }
 
 
@@ -39,28 +41,42 @@ const operadoresPorTipo: Record<string, string[]> = {
     varchar: ['igual a', 'parecido com'],
     text: ['igual a', 'parecido com'],
     boolean: ['igual a', 'diferente de'],
-    datetime : ['entre']
+    datetime: ['entre']
 };
 
 
 const operadoresHaving = [
-  { value: '>', label: 'Maior' },
-  { value: '>=', label: 'Maior igual' },
-  { value: '<', label: 'Menor' },
-  { value: '<=', label: 'Menor igual' },
-  { value: '=', label: 'Igual' },
-  { value: '!=', label: 'Diferente' },
+
+    { value: '', label: 'Selecione (opcional)' },
+    { value: '>', label: 'Maior' },
+    { value: '>=', label: 'Maior igual' },
+    { value: '<', label: 'Menor' },
+    { value: '<=', label: 'Menor igual' },
+    { value: '=', label: 'Igual' },
+    { value: '!=', label: 'Diferente' },
 ];
+
+const funcoesAgregacao =[
+    { value: '', label: 'Selecione...' },
+    { value: 'COUNT', label: 'Número de repetições' },
+    { value: 'SUM', label: 'Somatório' },
+    { value: 'AVG', label: 'Média' },
+    { value: 'MIN', label: 'Mínimo' },
+    { value: 'MAX', label: 'Máximo' },
+]
 
 
 const RelatorioAdHoc: React.FC = () => {
+    const [carregando, setCarregando] = useState(false);
     const [tabelasSelecionadas, setTabelasSelecionadas] = useState<string[]>([]);
     const [colunasDisponiveis, setColunasDisponiveis] = useState<ColunaDisponivel[]>([]);
     const [colunasSelecionadas, setColunasSelecionadas] = useState<string[]>([]);
     const [dados, setDados] = useState<DadosAPI[]>([]);
     const [filtros, setFiltros] = useState<Filtro[]>([]);
     const [agregacoes, setAgregacoes] = useState<Agregacao[]>([]);
-
+    const alertError = (msg: string) => {
+        toast.error(msg);
+    };
     const obterTipoColuna = (colunaNome: string): string => {
         const found = colunasDisponiveis.find(c => c.nome === colunaNome);
         return found?.tipo || 'varchar';
@@ -71,21 +87,21 @@ const RelatorioAdHoc: React.FC = () => {
     };
 
     const atualizarAgregacao = (index: number, campo: keyof Agregacao, valor: any) => {
-        const novas : any = [...agregacoes];
+        const novas: any = [...agregacoes];
         novas[index][campo] = valor;
         setAgregacoes(novas);
     };
 
     const atualizarHaving = (index: number, campo: 'operador' | 'valor', valor: any) => {
-        const novas : any  = [...agregacoes];
-        if (!novas[index].having) 
+        const novas: any = [...agregacoes];
+        if (!novas[index].having)
             novas[index].having = { operador: '>', valor: 0 };
         novas[index].having![campo] = valor;
         setAgregacoes(novas);
     };
 
     const removerAgregacao = (index: number) => {
-    setAgregacoes(agregacoes.filter((_, i) => i !== index));
+        setAgregacoes(agregacoes.filter((_, i) => i !== index));
     };
 
 
@@ -197,7 +213,9 @@ const RelatorioAdHoc: React.FC = () => {
     }, [tabelasSelecionadas]);
 
     const buscarDados = () => {
-       const estrutura = {
+        setCarregando(true); // Ativa o GIF
+
+        const estrutura = {
             tabelas: tabelasSelecionadas,
             colunas: colunasSelecionadas.map(col => {
                 const [tabela, ...resto] = col.split('/');
@@ -206,9 +224,9 @@ const RelatorioAdHoc: React.FC = () => {
             filtros: filtros
                 .filter(f => f.coluna && f.operador && f.valor !== '')
                 .map(f => ({
-                coluna: f.coluna.replace('/', '.'),
-                operador: f.operador,
-                valor: f.valor
+                    coluna: f.coluna.replace('/', '.'),
+                    operador: f.operador,
+                    valor: f.valor
                 })),
             agregacoes: agregacoes.map(agg => ({
                 coluna: agg.coluna.replace('/', '.'),
@@ -228,25 +246,30 @@ const RelatorioAdHoc: React.FC = () => {
             })
             .catch(error => {
                 console.error('Erro ao buscar dados:', error);
+                alertError('Erro ao buscar dados:')
+
                 setDados([]); // limpa dados em caso de erro
+            }) 
+            .finally(() => {
+                setCarregando(false); // Desativa o GIF
             });
     };
-    
-    const colunasTabela = dados.length > 0
-    ? Object.keys(dados[0]).map(col => ({
-          name: String(col),
-          selector: (row: any) => String(row[col]),
-          sortable: true,
-      }))
-    : [];
 
-    const podeSelecionarTabela = function(tabela: string, selecionadas: string[]) {
+    const colunasTabela = dados.length > 0
+        ? Object.keys(dados[0]).map(col => ({
+            name: String(col),
+            selector: (row: any) => String(row[col]),
+            sortable: true,
+        }))
+        : [];
+
+    const podeSelecionarTabela = function (tabela: string, selecionadas: string[]) {
         if (selecionadas.length === 0) return true;
 
         // Mantém visível as já selecionadas
         if (selecionadas.includes(tabela)) return true;
 
-        if (selecionadas.includes('orbital_parameters') && selecionadas.length === 1 ) {
+        if (selecionadas.includes('orbital_parameters') && selecionadas.length === 1) {
             // Orbital_parameters só se conecta com starlink_satellites
             return tabela === 'starlink_satellites';
         }
@@ -270,251 +293,285 @@ const RelatorioAdHoc: React.FC = () => {
     }
 
     return (
-        <div className='w-100'>
-            {/* <h2>Relatório Ad Hoc</h2> */}
-            <div className="card mt-5 p-3 w-100">
-                <label>Tabelas:</label>
-            
-                <Select
-                    isMulti
-                    options={tabelas   
-                        .filter(t => podeSelecionarTabela(t, tabelasSelecionadas))
-                        .map(t => ({ label: t, value: t }))
-                    }
-                    value={tabelasSelecionadas.map(t => ({ label: t, value: t }))}
-                    onChange={(selectedOptions) => {
-                        const valores = selectedOptions.map(opt => opt.value);
-                        setTabelasSelecionadas(valores);
-                    }}
-                    placeholder="Selecione tabelas..."
-                    styles={customStyles}
-                />
+        <div className="d-block h-full min-vh-100">
+            <div className='w-100 d-flex justify-content-center'>
+                {/* <h2>Relatório Ad Hoc</h2> */}
+                <div className="card mt-5 p-3 w-75">
+                    <label>Tabelas:</label>
 
-                {colunasDisponiveis.length > 0 && (
-                    <>
-                        <label>Atributos:</label>
-                        <Select
-                            isMulti
-                            styles={customStyles}
-                            options={colunasDisponiveis.map(col => ({
-                                label: col.nome,
-                                value: col.nome
-                            }))}
-                            value={colunasSelecionadas.map(col => ({
-                                label: col,
-                                value: col
-                            }))}
-                            onChange={(selectedOptions) => {
-                                const valores = selectedOptions.map(opt => opt.value);
-                                setColunasSelecionadas(valores);
-                            }}
-                            placeholder="Selecione colunas..."
-                        />
+                    <Select
+                        isMulti
+                        options={tabelas
+                            .filter(t => podeSelecionarTabela(t, tabelasSelecionadas))
+                            .map(t => ({ label: t, value: t }))
+                        }
+                        value={tabelasSelecionadas.map(t => ({ label: t, value: t }))}
+                        onChange={(selectedOptions) => {
+                            const valores = selectedOptions.map(opt => opt.value);
+                            setTabelasSelecionadas(valores);
+                        }}
+                        placeholder="Selecione tabelas..."
+                        styles={customStyles}
+                    />
 
-                        <div style={{ marginTop: '1rem' }}>
-                            <h4>Agregações</h4>
-                            {agregacoes.map((agg, i) => (
-                                <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                {/* Coluna (somente das já selecionadas) */}
-                                <Select
-                                    options={colunasSelecionadas.map(col => ({ label: col, value: col }))}
-                                    value={agg.coluna ? { label: agg.coluna, value: agg.coluna } : null}
-                                    onChange={(opt) => atualizarAgregacao(i, 'coluna', opt?.value)}
-                                    placeholder="Coluna"
-                                    styles={customStyles}
-                                />
+                    {colunasDisponiveis.length > 0 && (
+                        <>
+                            <label>Atributos:</label>
+                            <Select
+                                isMulti
+                                styles={customStyles}
+                                options={colunasDisponiveis.map(col => ({
+                                    label: col.nome,
+                                    value: col.nome
+                                }))}
+                                value={colunasSelecionadas.map(col => ({
+                                    label: col,
+                                    value: col
+                                }))}
+                                onChange={(selectedOptions) => {
+                                    const valores = selectedOptions.map(opt => opt.value);
+                                    setColunasSelecionadas(valores);
+                                }}
+                                placeholder="Selecione colunas..."
+                            />
 
-                                {/* Função agregada */}
-                                <Select
-                                    options={['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'].map(func => ({
-                                    label: func, value: func
-                                    }))}
-                                    value={{ label: agg.funcao, value: agg.funcao }}
-                                    onChange={(opt) => atualizarAgregacao(i, 'funcao', opt?.value)}
-                                    placeholder="Função"
-                                    styles={customStyles}
-                                />
+                            <div className='mt-1 form-group '>
+                                <h4>Agregações</h4>
+                                {agregacoes.map((agg, i) => (
+                                    <div key={i} className='d-flex col-md-12 mt-1'>
+                                        {/* Coluna (somente das já selecionadas) */}
+                                        <div className='col-md-3 me-3'>
+                                            <Select
+                                                options={colunasSelecionadas.map(col => ({ label: col, value: col }))}
+                                                value={agg.coluna ? { label: agg.coluna, value: agg.coluna } : null}
+                                                onChange={(opt) => atualizarAgregacao(i, 'coluna', opt?.value)}
+                                                placeholder="Coluna"
+                                                styles={customStyles}
 
-                                {/* Alias */}
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Alias (opcional)"
-                                    value={agg.alias || ''}
-                                    onChange={(e) => atualizarAgregacao(i, 'alias', e.target.value)}
-                                />
+                                            />
+                                        </div>
 
-                                {/* HAVING opcional */}
-                                {/* <select
-                                    value={agg.having?.operador || '>'}
-                                    onChange={(e) => atualizarHaving(i, 'operador', e.target.value)}
-                                >
-                                    <option value=">">Maior</option>
-                                    <option value=">=">Maior igual</option>
-                                    <option value="<">Menor</option>
-                                    <option value="<=">Menor igual</option>
-                                    <option value="=">Igual</option>
-                                    <option value="!=">Diferente</option>
-                                </select> */}
-                                <Select
-                                    options={operadoresHaving}
-                                    value={operadoresHaving.find(opt => opt.value === (agg.having?.operador || '>'))}
-                                    onChange={(opt) => atualizarHaving(i, 'operador', opt?.value || '>')}
-                                    placeholder="Operador"
-                                    styles={customStyles}
-                                />
+                                        {/* Função agregada */}
+                                        <div className='col-md me-3'>
+                                            <Select
+                                                // options={['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'].map(func => ({
+                                                //     label: func, value: func
+                                                // }))}
+                                                options={funcoesAgregacao}
+                                                // value={{ label: agg.funcao, value: agg.funcao }}
+                                                value={operadoresHaving.find(opt => opt.value === (agg?.funcao || ''))}
+                                                onChange={(opt) => atualizarAgregacao(i, 'funcao', opt?.value)}
+                                                placeholder="Função"
+                                                styles={customStyles}
+                                            />
+                                        </div>
 
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    placeholder="Valor HAVING"
-                                    value={agg.having?.valor || ''}
-                                    onChange={(e) => atualizarHaving(i, 'valor', Number(e.target.value))}
-                                />
+                                        {/* Alias */}
+                                        <div className='col-md-3 me-3'>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                placeholder="Nome da tabela adicionada (opcional)"
+                                                value={agg.alias || ''}
+                                                onChange={(e) => atualizarAgregacao(i, 'alias', e.target.value)}
+                                            />
+                                        </div>
 
-                                <button className="btn mt-2 btn-danger" onClick={() => removerAgregacao(i)}>X</button>
-                                </div>
-                            ))}
-                            <button className="btn mt-2 btn-primary" onClick={adicionarAgregacao}>Adicionar Agregação</button>
-                        </div>
-
-
-                        
-
-                        <div style={{ marginTop: '1rem' }}>
-                            <h4>Filtros</h4>
-                            {filtros.map((filtro, i) => {
-                                const tipo = obterTipoColuna(filtro.coluna);
-                                const operadoresDisponiveis = obterOperadores(tipo);
-
-                                return (
-                                    <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <Select
-                                            options={colunasDisponiveis.map(col => ({
-                                                label: col.nome,
-                                                value: col.nome
-                                                }))}
-                                            value={filtro.coluna ? { label: filtro.coluna, value: filtro.coluna } : null}
-                                            onChange={(opt) => {
-                                                const tipoCol = obterTipoColuna(opt?.value || '');
-                                                atualizarFiltro(i, 'coluna', opt?.value || '');
-                                                atualizarFiltro(i, 'tipo', tipoCol);
-                                            }}
-                                            placeholder="Coluna"
-                                            styles={customStyles}
-                                        />
-
-                                        <Select
-                                            options={operadoresDisponiveis.map(op => ({ label: op, value: op }))}
-                                            value={{ label: filtro.operador, value: filtro.operador }}
-                                            onChange={(opt) => atualizarFiltro(i, 'operador', opt?.value || '=')}
-                                            placeholder="Operador"
-                                            styles={customStyles}
-                                        />
-
-                                        {filtro.operador === 'BETWEEN' ? (
-                                            <>
-                                                <input
-                                                    type="number"
-                                                    placeholder="Min"
-                                                    className="form-control"
-                                                    onChange={(e) => {
-                                                        const val = filtro.valor as [number, number] || [0, 0];
-                                                        atualizarFiltro(i, 'valor', [Number(e.target.value), val[1]]);
-                                                    }}
-                                                />
-                                                <input
-                                                    type="number"
-                                                    placeholder="Max"
-                                                    className="form-control"
-                                                    onChange={(e) => {
-                                                        const val = filtro.valor as [number, number] || [0, 0];
-                                                        atualizarFiltro(i, 'valor', [val[0], Number(e.target.value)]);
-                                                    }}
-                                                />
-                                            </>
-                                        ) : tipo === 'integer' || tipo === 'float' || tipo === 'double' ? (
+                                        {/* HAVING opcional */}
+                                        <div className='col-md me-3'>
+                                            <Select
+                                                options={operadoresHaving}
+                                                value={operadoresHaving.find(opt => opt.value === (agg.having?.operador || ''))}
+                                                onChange={(opt) => atualizarHaving(i, 'operador', opt?.value || '')}
+                                                placeholder="Operador"
+                                                styles={customStyles}
+                                            />
+                                        </div>
+                                        <div className='col-md me-3'>
                                             <input
                                                 type="number"
                                                 className="form-control"
                                                 placeholder="Valor"
-                                                value={typeof filtro.valor === 'number' ? filtro.valor : ''}
-                                                onChange={(e) => atualizarFiltro(i, 'valor', Number(e.target.value))}
+                                                value={agg.having?.valor || ''}
+                                                onChange={(e) => atualizarHaving(i, 'valor', Number(e.target.value))}
                                             />
-                                        ) : tipo === 'boolean' ? (
-                                            <select
-                                                value={String(filtro.valor)}
-                                                onChange={(e) => atualizarFiltro(i, 'valor', e.target.value === 'true')}
-                                            >
-                                                <option value="true">Verdadeiro</option>
-                                                <option value="false">Falso</option>
-                                            </select>
-                                        ) : tipo === 'datetime' && filtro.operador === 'entre' ? (
-                                            <>
-                                                <input
-                                                    type="date"
-                                                    className="form-control"
-                                                    value={Array.isArray(filtro.valor) ? filtro.valor[0] : ''}
-                                                    onChange={(e) => {
-                                                        const fim = Array.isArray(filtro.valor) ? filtro.valor[1] : '';
-                                                        atualizarFiltro(i, 'valor', [e.target.value, fim]);
-                                                    }}
-                                                />
-                                                <input
-                                                    type="date"
-                                                    value={Array.isArray(filtro.valor) ? filtro.valor[1] : ''}
-                                                    onChange={(e) => {
-                                                        const inicio = Array.isArray(filtro.valor) ? filtro.valor[0] : '';
-                                                        atualizarFiltro(i, 'valor', [inicio, e.target.value]);
-                                                    }}
-                                                />
-                                            </>
-                                        ) :                                                                       
-                                        (
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                placeholder="Valor"
-                                                value={typeof filtro.valor === 'string' ? filtro.valor : ''}
-                                                onChange={(e) => atualizarFiltro(i, 'valor', e.target.value)}
-                                            />
-                                        )}
+                                        </div>
 
-                                        <button className="btn mt-2 btn-danger" onClick={() => removerFiltro(i)}>X</button>
+                                        <button className="btn btn-danger" onClick={() => removerAgregacao(i)}>X</button>
+
                                     </div>
-                                );
-                            })}
+                                ))}
+                                <button className="btn mt-2 btn-primary" onClick={adicionarAgregacao}>Adicionar Agregação</button>
+                            </div>
 
-                            <button className="btn mt-2 btn-primary" onClick={adicionarFiltro}>Adicionar Filtro</button>
-                        </div>
+                            <div className='mt-1 form-group'>
+                                <h4>Filtros</h4>
+                                {filtros.map((filtro, i) => {
+                                    const tipo = obterTipoColuna(filtro.coluna);
+                                    const operadoresDisponiveis = obterOperadores(tipo);
 
-                        <button className="btn mt-2 btn-primary" onClick={buscarDados}>Buscar</button>
-                    </>
-                )}
+                                    return (
+                                        <div key={i} className='d-flex col-md-12 mt-1'>
+                                            <div className='col-md-3 me-3'>
+                                                <Select
+                                                    options={colunasDisponiveis.map(col => ({
+                                                        label: col.nome,
+                                                        value: col.nome
+                                                    }))}
+                                                    value={filtro.coluna ? { label: filtro.coluna, value: filtro.coluna } : null}
+                                                    onChange={(opt) => {
+                                                        const tipoCol = obterTipoColuna(opt?.value || '');
+                                                        atualizarFiltro(i, 'coluna', opt?.value || '');
+                                                        atualizarFiltro(i, 'tipo', tipoCol);
+                                                    }}
+                                                    placeholder="Coluna"
+                                                    styles={customStyles}
+                                                />
+                                            </div>
+                                            <div className='col-md me-3'>
+                                                <Select
+                                                    options={operadoresDisponiveis.map(op => ({ label: op, value: op }))}
+                                                    value={{ label: filtro.operador, value: filtro.operador }}
+                                                    onChange={(opt) => atualizarFiltro(i, 'operador', opt?.value || '=')}
+                                                    placeholder="Operador"
+                                                    styles={customStyles}
+                                                />
+                                            </div>
+
+                                            {filtro.operador === 'entre' && (tipo === 'integer' || tipo === 'float' || tipo === 'double') ? (
+                                                <div className='col-md-5 me-3 d-flex '>
+                                                    <div className='col-md me-3'>
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Min"
+                                                            className="form-control me-3"
+                                                            onChange={(e) => {
+                                                                const val = filtro.valor as [number, number] || [0, 0];
+                                                                atualizarFiltro(i, 'valor', [Number(e.target.value), val[1]]);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Max"
+                                                            className="form-control me-3"
+                                                            onChange={(e) => {
+                                                                const val = filtro.valor as [number, number] || [0, 0];
+                                                                atualizarFiltro(i, 'valor', [val[0], Number(e.target.value)]);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : tipo === 'integer' || tipo === 'float' || tipo === 'double' ? (
+                                                <div className='col-md-5 me-3'>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control"
+                                                        placeholder="Valor"
+                                                        value={typeof filtro.valor === 'number' ? filtro.valor : ''}
+                                                        onChange={(e) => atualizarFiltro(i, 'valor', Number(e.target.value))}
+                                                    />
+                                                </div>
+                                            ) : tipo === 'boolean' ? (
+                                                <select
+                                                    value={String(filtro.valor)}
+                                                    onChange={(e) => atualizarFiltro(i, 'valor', e.target.value === 'true')}
+                                                >
+                                                    <option value="true">Verdadeiro</option>
+                                                    <option value="false">Falso</option>
+                                                </select>
+                                            ) : tipo === 'datetime' && filtro.operador === 'entre' ? (
+                                                <div className='d-flex col-md-5 me-3'>
+                                                    <div className="col-md me-3">
+                                                        <input
+                                                            type="date"
+                                                            className="form-control me-3"
+                                                            value={Array.isArray(filtro.valor) ? filtro.valor[0] : ''}
+                                                            onChange={(e) => {
+                                                                const fim = Array.isArray(filtro.valor) ? filtro.valor[1] : '';
+                                                                atualizarFiltro(i, 'valor', [e.target.value, fim]);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md">
+                                                        <input
+                                                            type="date"
+                                                            className="form-control me-3"
+                                                            value={Array.isArray(filtro.valor) ? filtro.valor[1] : ''}
+                                                            onChange={(e) => {
+                                                                const inicio = Array.isArray(filtro.valor) ? filtro.valor[0] : '';
+                                                                atualizarFiltro(i, 'valor', [inicio, e.target.value]);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) :
+                                                (
+                                                    <div className='col-md-5 me-3'>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            placeholder="Valor"
+                                                            value={typeof filtro.valor === 'string' ? filtro.valor : ''}
+                                                            onChange={(e) => atualizarFiltro(i, 'valor', e.target.value)}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                            <button className="btn btn-danger" onClick={() => removerFiltro(i)}>X</button>
+                                        </div>
+                                    );
+                                })}
+
+                                <button className="btn mt-2 btn-primary" onClick={adicionarFiltro}>Adicionar Filtro</button>
+                            </div>
+
+                            <button className="btn mt-2 btn-primary" onClick={buscarDados}>Buscar</button>
+                        </>
+                    )}
+                </div>
             </div>
-            {dados.length > 0 && (
-                  <>
-                      <div style={{ marginBottom: '1rem' }}>
-                          <CSVLink
-                              data={dados}
-                              filename="relatorio.csv"
-                              className="btn mt-2 btn-primary"
-                              target="_blank"
-                          >
-                              Exportar CSV
-                          </CSVLink>
-                      </div>
-                      <DataTable
-                          columns={colunasTabela}
-                          data={dados}
-                          pagination
-                          highlightOnHover
-                          responsive
-                          striped
-                      />
-                  </>
-              )}
+            <div className='w-100 d-flex justify-content-center'>
 
+                <div className='card mt-1 w-75'>
+                    {carregando && (
+                        <div className="text-center mt-4">
+                            <img src={rocketLoader} alt="Carregando..." width="100" />
+                            <p className="mt-2">Cabo Houston, estamos recebendo os dados!</p>
+                        </div>
+                    )}
+                    {!carregando && (
+                    <div className='d-flex justify-content-center'>
+                        <div className='w-75'>
+                            {dados.length > 0 && (
+                                <>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <CSVLink
+                                            data={dados}
+                                            filename="relatorio.csv"
+                                            className="btn mt-2 btn-primary"
+                                            target="_blank"
+                                        >
+                                            Exportar CSV
+                                        </CSVLink>
+                                    </div>
+                                    <DataTable
+                                        columns={colunasTabela}
+                                        data={dados}
+                                        pagination
+                                        highlightOnHover
+                                        responsive
+                                        striped
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    )}
+                </div>
+            </div>
+            
         </div>
     );
 };
