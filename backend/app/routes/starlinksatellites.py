@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.controllers.starlinksatellites_controller import StarlinkSatellitesController
 
-starlinksatellites_bp = Blueprint("starlinksatellites", __name__)
+starlinksatellites_bp = Blueprint("starlink_satellites", __name__)
 
 starlinksatellites_controller = StarlinkSatellitesController()
 

@@ -151,7 +151,7 @@ class StarlinkSatellites(Base):
     velocity_kms: Mapped[Optional[float]] = mapped_column(Double(53))
     version: Mapped[Optional[str]] = mapped_column(String)
     launch_id: Mapped[Optional[str]] = mapped_column(String)
-    decayed: Mapped[Optional[bool]] = mapped_column(Boolean)
+    # decayed: Mapped[Optional[bool]] = mapped_column(Boolean)
 
     launch: Mapped[Optional['Launches']] = relationship('Launches', back_populates='starlink_satellites')
     orbital_parameters: Mapped[List['OrbitalParameters']] = relationship('OrbitalParameters', back_populates='starlink')
