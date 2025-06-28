@@ -302,7 +302,7 @@ const RelatorioAdHoc: React.FC = () => {
             <div className='w-100 d-flex justify-content-center'>
                 {/* <h2>Relatório Ad Hoc</h2> */}
                 <div className="card mt-5 p-3 w-75">
-                    <label>Tabelas:</label>
+                    <h5>Tabelas:</h5>
 
                     <Select
                         isMulti
@@ -321,7 +321,7 @@ const RelatorioAdHoc: React.FC = () => {
 
                     {colunasDisponiveis.length > 0 && (
                         <>
-                            <label>Atributos:</label>
+                            <h5>Atributos:</h5>
                             <Select
                                 isMulti
                                 styles={customStyles}
@@ -341,7 +341,7 @@ const RelatorioAdHoc: React.FC = () => {
                             />
 
                             <div className='mt-1 form-group '>
-                                <h4>Agregações</h4>
+                                <h5>Agregações</h5>
                                 {agregacoes.map((agg, i) => (
                                     <div key={i} className='d-flex col-md-12 mt-1'>
                                         {/* Coluna (somente das já selecionadas) */}
@@ -410,7 +410,7 @@ const RelatorioAdHoc: React.FC = () => {
                             </div>
 
                             <div className='mt-1 form-group'>
-                                <h4>Filtros</h4>
+                                <h5>Filtros</h5>
                                 {filtros.map((filtro, i) => {
                                     const tipo = obterTipoColuna(filtro.coluna);
                                     const operadoresDisponiveis = obterOperadores(tipo);
