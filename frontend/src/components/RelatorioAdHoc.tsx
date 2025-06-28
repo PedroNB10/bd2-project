@@ -479,13 +479,22 @@ const RelatorioAdHoc: React.FC = () => {
                                                     />
                                                 </div>
                                             ) : tipo === 'boolean' ? (
-                                                <select
-                                                    value={String(filtro.valor)}
-                                                    onChange={(e) => atualizarFiltro(i, 'valor', e.target.value === 'true')}
-                                                >
-                                                    <option value="true">Verdadeiro</option>
-                                                    <option value="false">Falso</option>
-                                                </select>
+                                                <div className='col-md-5 me-3'>
+                                                    <Select
+                                                        options={[
+                                                            { label: 'Verdadeiro', value: 'true' },
+                                                            { label: 'Falso', value: 'false' }
+                                                        ]}
+                                                        value={
+                                                            filtro.valor !== undefined
+                                                                ? { label: filtro.valor ? 'Verdadeiro' : 'Falso', value: String(filtro.valor) }
+                                                                : null
+                                                        }
+                                                        onChange={(opt) => atualizarFiltro(i, 'valor', opt?.value === 'true')}
+                                                        placeholder="Valor"
+                                                        styles={customStyles}
+                                                    />
+                                                </div>
                                             ) : tipo === 'datetime' && filtro.operador === 'entre' ? (
                                                 <div className='d-flex col-md-5 me-3'>
                                                     <div className="col-md me-3">
