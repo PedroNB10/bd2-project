@@ -192,6 +192,7 @@ const RelatorioAdHoc: React.FC = () => {
                             tipo: tipo.toLowerCase()
                         })))
                         .catch(err => {
+                            alertError(`Erro ao buscar colunas da tabela ${tabela}`)
                             console.error(`Erro ao buscar colunas da tabela ${tabela}:`, err);
                             return [];
                         })
