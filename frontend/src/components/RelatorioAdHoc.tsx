@@ -268,6 +268,10 @@ const RelatorioAdHoc: React.FC = () => {
 
         // Mantém visível as já selecionadas
         if (selecionadas.includes(tabela)) return true;
+
+        if (selecionadas.includes('launch_cores') && selecionadas.length === 1) {
+            return tabela === 'cores' || tabela === 'launches';
+        }
         
         if (selecionadas.includes('cores') && selecionadas.length === 1) {
             return tabela === 'launch_cores';
