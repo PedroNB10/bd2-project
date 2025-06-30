@@ -8,6 +8,7 @@ from collections import defaultdict
 
 class RelatorioDao(BaseDAO):
 
+    # Função usada para tratar valores de data
     def tratar_valor(self, coluna_nome: str, valor):
         if isinstance(valor, list) and len(valor) == 2:
             if 'date' in coluna_nome or 'time' in coluna_nome:
@@ -23,6 +24,11 @@ class RelatorioDao(BaseDAO):
                     pass
         return valor
     
+    # Função usada para mapear o grafo de relações entre as tabelas usadas na consulta
+    # tabelas: tabelas usadas na consulta
+    # Retorna:
+    # - o dicionário de relacionamentos (grafo)
+    # - o mapa de nome -> tabela (para uso posterior nos joins)
     def extrair_relacoes(self, tables):
         # Cria um dicionário onde cada chave (tabela) aponta para uma lista de relacionamentos (joins possíveis)
         relacoes = defaultdict(list)
@@ -45,15 +51,19 @@ class RelatorioDao(BaseDAO):
                 # Armazena a relação no grafo (unidirecional)
                 relacoes[origem].append((destino, condicao))
 
-                # Também armazena o inverso (bidirecional) — necessário para montar os joins de qualquer lado
+                # Também armazena o inverso (bidirecional) - necessário para montar os joins de qualquer lado
                 relacoes[destino].append((origem, condicao))
 
-        # Retorna:
-        # - o dicionário de relacionamentos (grafo)
-        # - o mapa de nome → tabela (para uso posterior nos joins)
         return relacoes, nome_para_tabela
     
-    #  uso um especie de BFS para percorrer as tabelas 
+    # Função encarregada da gerência os Joins entre as tabelas, modelando as 
+    # tabelas em forma de grafo e usando uma DFS para identificar com quais 
+    # tabelas cada tabela selecionada se relaciona
+    # query: consulta que vai ser retornada
+    # tabelas_usadas: tabelas que estão sendo usadas na query
+    # relacoes: tabelas com as quais as tabelas usadas podem se relacionar
+    # nome_para_tabela: informações das tabelas utilizadas
+    # Retorna a query com todos os joins necessários montados
     def montar_joins(self, query, tabelas_usadas, relacoes, nome_para_tabela):
         # Conjunto para rastrear quais tabelas já foram incluídas na query (com join ou como base)
         tabelas_joined = set()
@@ -95,9 +105,14 @@ class RelatorioDao(BaseDAO):
                 # então o conjunto de tabelas solicitado não está todo interligado — gera erro
                 raise DaoError("Não foi possível conectar todas as tabelas solicitadas.")
 
-        # Retorna a query com todos os joins necessários montados
         return query
 
+    # Função principal usada para montar a consulta 
+    # tabelas: tabelas que foram selecionadas pelo usuario
+    # colunas: colunas a serem usadas no Select
+    # filtros: Informações para a cláusula where
+    # agregacoes: informações para ser usada se o usuario solicitar algum recurso de agregação 
+    # Retorna: O resultado da query passada pelo usuario
     def buscar_dados(self, tabelas: list[str], colunas: list[str], filtros: list[dict], agregacoes: list[dict] = []) -> list[dict]:
         metadata = MetaData()
         try:
@@ -133,10 +148,12 @@ class RelatorioDao(BaseDAO):
 
         except Exception as e:
             raise DaoError(f"Erro ao buscar dados do relatório: {e}")
-
+        
+    # Constroi a coluna criada pela operação de agregação
+    # Colunas: colunas que vão ser exibidas sem ser a coluna de agregação
+    # Agregacao: Informações(coluna, função e nome da tabela gerada) das agregações solicitadas
+    # Nome_para_tabela: Informações da tabela escolhida
     def construir_colunas(self, colunas, agregacoes, nome_para_tabela):
-        from sqlalchemy import func
-
         cols = []
         group_by_cols = []
         having_conditions = []
@@ -167,7 +184,10 @@ class RelatorioDao(BaseDAO):
                 having_conditions.append(cond)
 
         return cols, group_by_cols, having_conditions
-
+    
+    # Função para filtrar quais agregações foram solicitadas
+    # função: função escolhida
+    #coluna_obj: a coluna em que vou aplicar a função escolhida
     def criar_agregacao(self, funcao, coluna_obj):
         from sqlalchemy import func
         match funcao:
@@ -178,6 +198,10 @@ class RelatorioDao(BaseDAO):
             case 'MIN': return func.min(coluna_obj)
             case _: raise DaoError(f"Função de agregação desconhecida: {funcao}")
 
+    # Função para lidar com os operadores tanto dos  having da agregação 
+    # coluna_expr: coluna considerada no filtro
+    # operador: operador escolhido pelo usuario
+    # valor: valor a ser comparado com o valor de cada tupla da coluna expr 
     def operador_para_expressao(self, coluna_expr, operador, valor):
         match operador:
             case '>': return coluna_expr > valor
@@ -187,7 +211,10 @@ class RelatorioDao(BaseDAO):
             case '=' | '==': return coluna_expr == valor
             case '!=': return coluna_expr != valor
             case _: raise DaoError(f"Operador HAVING inválido: {operador}")
-
+        
+    # Função para lidar também com filtro mas relacionado a clausula where da consulta
+    # filtros: escolhido pelo usuario 
+    # nome_para_tabela:  estrutura da tabela que sera aplicada o filtro
     def construir_filtros(self, filtros, nome_para_tabela):
         condicoes = []
         for f in filtros:
@@ -210,137 +237,3 @@ class RelatorioDao(BaseDAO):
                 case _: raise DaoError(f"Operador inválido ou mal formatado: {op}")
 
         return condicoes
-
-    # def buscar_dados(self, tabelas: list[str], colunas: list[str], filtros: list[dict], agregacoes: list[dict] = []) -> list[dict]:
-    #     metadata = MetaData()
-    #     try:
-    #         with self.get_session() as session:
-    #             tables = [Table(t, metadata, autoload_with=session.bind) for t in tabelas]
-    #             nome_para_tabela = {t.name: t for t in tables}
-
-    #             # Monta colunas normais e guarda objetos para possível GROUP BY
-    #             from sqlalchemy import func
-    #             cols = []
-    #             group_by_cols = []
-
-    #             for col in colunas:
-    #                 tabela_nome, coluna_nome = col.split('.', 1)
-    #                 tabela_obj = nome_para_tabela[tabela_nome]
-    #                 coluna_obj = tabela_obj.c[coluna_nome]
-    #                 cols.append(coluna_obj)
-    #                 group_by_cols.append(coluna_obj)
-
-    #             # Adiciona colunas agregadas
-    #             having_conditions = []
-
-    #             for agg in agregacoes:
-    #                 tabela_nome, coluna_nome = agg['coluna'].split('.', 1)
-    #                 tabela_obj = nome_para_tabela[tabela_nome]
-    #                 coluna_obj = tabela_obj.c[coluna_nome]
-
-    #                 funcao = agg['funcao'].upper()
-    #                 alias = agg.get('alias', f'{funcao}_{coluna_nome}')
-
-    #                 # Cria a função agregada com alias
-    #                 if funcao == 'COUNT':
-    #                     expr = func.count(coluna_obj).label(alias)
-    #                 elif funcao == 'SUM':
-    #                     expr = func.sum(coluna_obj).label(alias)
-    #                 elif funcao == 'AVG':
-    #                     expr = func.avg(coluna_obj).label(alias)
-    #                 elif funcao == 'MAX':
-    #                     expr = func.max(coluna_obj).label(alias)
-    #                 elif funcao == 'MIN':
-    #                     expr = func.min(coluna_obj).label(alias)
-    #                 else:
-    #                     raise DaoError(f"Função de agregação desconhecida: {funcao}")
-
-    #                 cols.append(expr)
-
-    #                 # Se tiver cláusula HAVING
-    #                 if 'having' in agg:
-    #                     op = agg['having']['operador']
-    #                     val = agg['having']['valor']
-    #                     raw_expr = expr._proxy_key  # recupera o alias criado
-
-    #                     # Expressão HAVING precisa usar a função agregada diretamente
-    #                     if funcao == 'COUNT':
-    #                         having_expr = func.count(coluna_obj)
-    #                     elif funcao == 'SUM':
-    #                         having_expr = func.sum(coluna_obj)
-    #                     elif funcao == 'AVG':
-    #                         having_expr = func.avg(coluna_obj)
-    #                     elif funcao == 'MAX':
-    #                         having_expr = func.max(coluna_obj)
-    #                     elif funcao == 'MIN':
-    #                         having_expr = func.min(coluna_obj)
-
-    #                     # Mapeia operadores
-    #                     if op == '>':
-    #                         having_conditions.append(having_expr > val)
-    #                     elif op == '>=':
-    #                         having_conditions.append(having_expr >= val)
-    #                     elif op == '<':
-    #                         having_conditions.append(having_expr < val)
-    #                     elif op == '<=':
-    #                         having_conditions.append(having_expr <= val)
-    #                     elif op == '=' or op == '==':
-    #                         having_conditions.append(having_expr == val)
-    #                     elif op == '!=':
-    #                         having_conditions.append(having_expr != val)
-    #                     else:
-    #                         raise DaoError(f"Operador HAVING inválido: {op}")
-
-    #             query = select(*cols)
-
-    #             # Aplica filtros
-    #             condicoes = []
-    #             for f in filtros:
-    #                 tabela_nome, coluna_nome = f['coluna'].split('.', 1)
-    #                 tabela_obj = nome_para_tabela[tabela_nome]
-    #                 coluna_obj = tabela_obj.c[coluna_nome]
-    #                 valor = self.tratar_valor(coluna_nome, f['valor'])
-
-    #                 op = f['operador']
-    #                 if op == 'igual a':
-    #                     condicoes.append(coluna_obj == valor)
-    #                 elif op == 'maior que':
-    #                     condicoes.append(coluna_obj > valor)
-    #                 elif op == 'menor que':
-    #                     condicoes.append(coluna_obj < valor)
-    #                 elif op == 'maior ou igual a':
-    #                     condicoes.append(coluna_obj >= valor)
-    #                 elif op == 'menor ou igual a':
-    #                     condicoes.append(coluna_obj <= valor)
-    #                 elif op == 'diferente de':
-    #                     condicoes.append(coluna_obj != valor)
-    #                 elif op == 'parecido com':
-    #                     condicoes.append(coluna_obj.like(f'%{valor}%'))
-    #                 elif op == 'entre' and isinstance(valor, (list, tuple)) and len(valor) == 2:
-    #                     condicoes.append(coluna_obj.between(valor[0], valor[1]))
-    #                 else:
-    #                     raise DaoError(f"Operador inválido ou mal formatado: {op}")
-
-    #             # Joins dinâmicos
-    #             relacoes, nome_para_tabela = self.extrair_relacoes(tables)
-    #             query = self.montar_joins(query, tabelas, relacoes, nome_para_tabela)
-
-    #             if condicoes:
-    #                 query = query.where(and_(*condicoes))
-
-    #             # Aplica GROUP BY se tiver colunas não agregadas
-    #             if agregacoes and group_by_cols:
-    #                 query = query.group_by(*group_by_cols)
-                
-    #             if having_conditions:
-    #                 query = query.having(and_(*having_conditions))
-
-    #             resultado = session.execute(query)
-    #             rows = resultado.fetchall()
-    #             keys = resultado.keys()
-
-    #             return [dict(zip(keys, row)) for row in rows]
-
-    #     except Exception as e:
-    #         raise DaoError(f"Erro ao buscar dados do relatório: {e}")
-

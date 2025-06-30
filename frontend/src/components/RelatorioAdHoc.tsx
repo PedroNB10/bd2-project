@@ -4,8 +4,9 @@ import Select from 'react-select';
 import DataTable from 'react-data-table-component';
 import { CSVLink } from 'react-csv';
 import { toast } from 'react-toastify';
-import rocketLoader from '../assets/rocket-loader.gif'; // caminho relativo ao seu componente
+import rocketLoader from '../assets/rocket-loader.gif';
 
+// inicio das interfaces usadas para estruturar as informações 
 interface Filtro {
     coluna: string;
     tipo: string;
@@ -31,8 +32,9 @@ interface Agregacao {
         valor: number;
     };
 }
+// Fim das interfaces usadas para estruturar as informações
 
-
+// Inicio dos objetos para gerar alguns selects
 const operadoresPorTipo: Record<string, string[]> = {
     integer: ['igual a', 'maior que', 'menor que', 'maior ou igual a', 'menor ou igual a', 'entre'],
     float: ['igual a', 'maior que', 'menor que', 'maior ou igual a', 'menor ou igual a', 'entre'],
@@ -64,7 +66,7 @@ const funcoesAgregacao =[
     { value: 'MIN', label: 'Mínimo' },
     { value: 'MAX', label: 'Máximo' },
 ]
-
+// Fim dos objetos para gerar alguns selects
 
 const RelatorioAdHoc: React.FC = () => {
     const [carregando, setCarregando] = useState(false);
@@ -74,14 +76,17 @@ const RelatorioAdHoc: React.FC = () => {
     const [dados, setDados] = useState<DadosAPI[]>([]);
     const [filtros, setFiltros] = useState<Filtro[]>([]);
     const [agregacoes, setAgregacoes] = useState<Agregacao[]>([]);
+
     const alertError = (msg: string) => {
         toast.error(msg);
     };
+
     const obterTipoColuna = (colunaNome: string): string => {
         const found = colunasDisponiveis.find(c => c.nome === colunaNome);
         return found?.tipo || 'varchar';
     };
 
+    // Inicio funções para lidar com a Agregação
     const adicionarAgregacao = () => {
         setAgregacoes([...agregacoes, { coluna: '', funcao: 'COUNT' }]);
     };
@@ -103,8 +108,9 @@ const RelatorioAdHoc: React.FC = () => {
     const removerAgregacao = (index: number) => {
         setAgregacoes(agregacoes.filter((_, i) => i !== index));
     };
+    // Fim funções para lidar com a Agregação
 
-
+    // Inicio funções para lidar com o filtro
     const obterOperadores = (tipo: string): string[] => {
         return operadoresPorTipo[tipo] || ['='];
     };
@@ -122,7 +128,9 @@ const RelatorioAdHoc: React.FC = () => {
     const removerFiltro = (index: number) => {
         setFiltros(filtros.filter((_, i) => i !== index));
     };
+    // Fim funções para lidar com o filtro
 
+    // Variavel para customizar os selects
     const customStyles = {
         control: (provided: any) => ({
             ...provided,
@@ -163,6 +171,7 @@ const RelatorioAdHoc: React.FC = () => {
         }),
     };
 
+    // Lista de Tabelas para gerar as consultas 
     const tabelas: string[] = [
         'rockets', 'cores', 'orbital_parameters', 'crew',
         'launchpads', 'launches', 'launch_cores',
@@ -171,6 +180,8 @@ const RelatorioAdHoc: React.FC = () => {
 
     const prevTabelas = useRef<string[]>([]);
 
+    // Busca as colunas de cada tabela selecionada.
+    // Passando o nome da tabela seleciona para a rota que retorna as colunas da tabela solicitada 
     useEffect(() => {
         const tabelasAtuais = new Set(tabelasSelecionadas);
         const tabelasAntigas = new Set(prevTabelas.current);
@@ -213,8 +224,9 @@ const RelatorioAdHoc: React.FC = () => {
         }
     }, [tabelasSelecionadas]);
 
+    // Função responsavel por trazer o relatorio solicitado
     const buscarDados = () => {
-        setCarregando(true); // Ativa o GIF
+        setCarregando(true);
 
         const estrutura = {
             tabelas: tabelasSelecionadas,
@@ -242,20 +254,21 @@ const RelatorioAdHoc: React.FC = () => {
 
         axios.post('/api/relatorio', estrutura)
             .then(response => {
-                setDados(response.data); // atualiza estado com dados recebidos
+                setDados(response.data);
                 console.log('Dados recebidos:', response.data);
             })
             .catch(error => {
                 console.error('Erro ao buscar dados:', error);
                 alertError('Erro ao buscar dados:')
 
-                setDados([]); // limpa dados em caso de erro
+                setDados([]);
             }) 
             .finally(() => {
-                setCarregando(false); // Desativa o GIF
+                setCarregando(false); 
             });
     };
 
+    // Variavel com as clunas da tabela que sera gerada
     const colunasTabela = dados.length > 0
         ? Object.keys(dados[0]).map(col => ({
             name: String(col),
@@ -263,18 +276,20 @@ const RelatorioAdHoc: React.FC = () => {
             sortable: true,
         }))
         : [];
-
+    
+    // Função para a gerencia de tabelas que podem ser usadas juntas em uma consulta 
     const podeSelecionarTabela = function (tabela: string, selecionadas: string[]) {
         if (selecionadas.length === 0) return true;
 
-        // Mantém visível as já selecionadas
         if (selecionadas.includes(tabela)) return true;
 
         if (selecionadas.includes('launch_cores') && selecionadas.length === 1) {
+            // launch_cores só se conecta com launch_cores e cores
             return tabela === 'cores' || tabela === 'launches';
         }
         
         if (selecionadas.includes('cores') && selecionadas.length === 1) {
+            // Cores só se conecta com launch_cores
             return tabela === 'launch_cores';
         }
 
@@ -301,14 +316,13 @@ const RelatorioAdHoc: React.FC = () => {
             return true;
         }
 
-        // Qualquer outra primeira tabela → só permite launches como segunda
+        // Qualquer outra primeira tabela -> só permite launches como segunda
         return tabela === 'launches';
     }
 
     return (
         <div className="d-block h-full min-vh-100">
             <div className='w-100 d-flex justify-content-center'>
-                {/* <h2>Relatório Ad Hoc</h2> */}
                 <div className="card mt-5 p-3 w-75">
                     <h5>Tabelas:</h5>
 
@@ -367,9 +381,6 @@ const RelatorioAdHoc: React.FC = () => {
                                         {/* Função agregada */}
                                         <div className='col-md me-3'>
                                             <Select
-                                                // options={['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'].map(func => ({
-                                                //     label: func, value: func
-                                                // }))}
                                                 options={funcoesAgregacao}
                                                 // value={{ label: agg.funcao, value: agg.funcao }}
                                                 value={operadoresHaving.find(opt => opt.value === (agg?.funcao || ''))}
@@ -450,7 +461,7 @@ const RelatorioAdHoc: React.FC = () => {
                                                     styles={customStyles}
                                                 />
                                             </div>
-
+                                            {/* Seleciona os campos apropiados com base no tipo do atributo e o operador */}
                                             {filtro.operador === 'entre' && (tipo === 'integer' || tipo === 'float' || tipo === 'double') ? (
                                                 <div className='col-md-5 me-3 d-flex '>
                                                     <div className='col-md me-3'>
@@ -476,6 +487,7 @@ const RelatorioAdHoc: React.FC = () => {
                                                         />
                                                     </div>
                                                 </div>
+                                            // caso for um valor numerico
                                             ) : tipo === 'integer' || tipo === 'float' || tipo === 'double' ? (
                                                 <div className='col-md-5 me-3'>
                                                     <input
@@ -486,6 +498,7 @@ const RelatorioAdHoc: React.FC = () => {
                                                         onChange={(e) => atualizarFiltro(i, 'valor', Number(e.target.value))}
                                                     />
                                                 </div>
+                                            // caso for um valor booleano (true/false)
                                             ) : tipo === 'boolean' ? (
                                                 <div className='col-md-5 me-3'>
                                                     <Select
@@ -503,6 +516,7 @@ const RelatorioAdHoc: React.FC = () => {
                                                         styles={customStyles}
                                                     />
                                                 </div>
+                                            // caso for um campo de data
                                             ) : tipo === 'datetime' && filtro.operador === 'entre' ? (
                                                 <div className='d-flex col-md-5 me-3'>
                                                     <div className="col-md me-3">
@@ -528,7 +542,7 @@ const RelatorioAdHoc: React.FC = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                            ) :
+                                            ) : // Caso for um campo de texto
                                                 (
                                                     <div className='col-md-5 me-3'>
                                                         <input
@@ -554,6 +568,7 @@ const RelatorioAdHoc: React.FC = () => {
                     )}
                 </div>
             </div>
+            {/* Cardi par aexibir a tabela resultado */}
             <div className='w-100 d-flex justify-content-center'>
 
                 <div className='card mt-1 w-75'>
