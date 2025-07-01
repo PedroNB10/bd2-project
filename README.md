@@ -123,3 +123,21 @@ cd backend && python main.py
 ```bash
 cd frontend && npm install && npm run dev
 ```
+
+### Utilizando a aplicação
+
+Para usar a aplicação, siga os passos a seguir:
+
+1. Ao rodar o frontend, aparecerá o link para o site onde a aplicação rodará. Clique no link para ir até a página.
+
+2. Selecione as tabelas que serão usadas. Note que apenas tabelas em que um JOIN é possível serão mostradas.
+
+3. Selecione os atributos a serem mostrados, assim como um SELECT.
+
+4. (OPCIONAL) Para usar funções de agregação, adicione uma opção de agregação. Note que pode-se nomear o novo atributo, assim como filtra-lo, de forma semelhante ao uso de HAVING. 
+
+5. (OPCIONAL) Para realizar a função de WHERE, adicione um filtro. A filtragem de atributos é inteligente, pois observa qual o tipo do atributo selecionado e limita as opções de filtragem.
+
+6. Clique no botão "Buscar" e confira os resultados.
+
+7. (OPCIONAL) Clique no botão "Exportar CSV" para salvar a consulta localmente.
